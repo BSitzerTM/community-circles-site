@@ -16,6 +16,9 @@ backend:
   base_url: https://ccme-decap-proxy.brad-95f.workers.dev
   auth_endpoint: auth
 
+# Logo shown on the editor's login screen.
+logo_url: https://bsitzertm.github.io/community-circles-site/brand/lockup-sm.png
+
 # Uploaded photos are saved here and are published as part of the site.
 media_folder: public/uploads
 public_folder: /uploads

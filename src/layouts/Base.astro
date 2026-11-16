@@ -2,6 +2,8 @@
 /*
  * The page frame used by every page: header, navigation, main content and footer.
  * Pagefind only indexes what is inside <main data-pagefind-body>.
+ *
+ * Brand images live in public/brand/ (see the README, "Brand and design").
  */
 import '../styles/global.css';
 import { REPO_URL, url } from '../lib/records';
@@ -11,8 +13,10 @@ interface Props {
   description?: string;
 }
 
-const { title, description = 'The public record of the circles, roles, meetings, decisions and actions of the Connected Community Marine Estate, Muizenberg.' } =
-  Astro.props;
+const {
+  title,
+  description = 'The public record of the circles, roles, meetings, decisions and actions of the Connected Community Marine Estate, Muizenberg.',
+} = Astro.props;
 
 // Each entry is [path under the site, label]. The home page has path ''.
 const navItems: [string, string][] = [
@@ -39,22 +43,31 @@ const isCurrent = (path: string) => {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title} | CCME</title>
+    <title>{title} | Connected Community Marine Estate</title>
     <meta name="description" content={description} />
-    <!-- An empty inline icon stops browsers asking for /favicon.ico, which this site does not have. -->
-    <link rel="icon" href="data:," />
+    <link rel="icon" type="image/png" href={url('brand/favicon.png')} />
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to main content</a>
 
     <header class="site-header">
-      <p class="site-title"><a href={url()}>CCME: Connected Community Marine Estate</a></p>
+      <a class="brand" href={url()}>
+        <img
+          src={url('brand/lockup-sm.png')}
+          alt="Connected Community Marine Estate, home"
+          width="116"
+          height="88"
+        />
+      </a>
       <nav aria-label="Main">
         <ul class="nav-list">
           {
             navItems.map(([path, label]) => (
               <li>
                 <a href={url(path)} aria-current={isCurrent(path) ? 'page' : undefined}>
+                  {path === '' ? (
+                    <img class="nav-mark" src={url('brand/mark-sm.png')} alt="" width="32" height="28" />
+                  ) : null}
                   {label}
                 </a>
               </li>
@@ -63,14 +76,25 @@ const isCurrent = (path: string) => {
         </ul>
       </nav>
     </header>
+    <!-- Decorative wave under the header, taken from the logo. -->
+    <div class="wave" aria-hidden="true"></div>
 
     <main id="main" data-pagefind-body>
       <slot />
     </main>
 
     <footer class="site-footer">
+      <div class="footer-brand">
+        <img src={url('brand/mark-sm-white.png')} alt="" width="81" height="72" />
+        <img
+          src={url('brand/lockup-sm-white.png')}
+          alt="Connected Community Marine Estate"
+          width="126"
+          height="96"
+        />
+      </div>
       <p>
-        Every change to this site is kept in its Git history, so you can see who changed what and when.{' '}
+        The public record of how our neighbourhood works, kept in Git so you can see who changed what and when.{' '}
         <a href={REPO_URL}>Source code and history on GitHub</a>.
       </p>
     </footer>

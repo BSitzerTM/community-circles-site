@@ -3,10 +3,15 @@ import Base from '../layouts/Base.astro';
 import { REPO_URL, url } from '../lib/records';
 ---
 <Base title="About">
-  <h1>About CCME</h1>
-  <p class="lede">
-    The CCME (Connected Community Marine Estate) is a Muizenberg network of around 230 residents. Our shared purpose is to build a more connected community in Marine Estate.
-  </p>
+  <div class="page-logo">
+    <img src={url('brand/wordmark.png')} alt="" width="976" height="964" />
+    <div>
+      <h1>About Connected Community</h1>
+      <p class="lede">
+        The CCME (Connected Community Marine Estate) is a Muizenberg network of around 230 residents. Our shared purpose is to build a more connected community in Marine Estate.
+      </p>
+    </div>
+  </div>
   <p>
     We are guided by Sociocracy, using consent-based decision-making so that everyone can take part and share ownership. We also use Nonviolent Communication (NVC) to build empathy and constructive dialogue. We draw on design thinking, asset-based community development, Open Space Technology and appreciative inquiry.
   </p>

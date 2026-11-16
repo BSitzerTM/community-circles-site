@@ -130,29 +130,29 @@ const offsets = (count: number) => Array.from({ length: count }, (_, i) => (i - 
   }
 
   .map-line {
-    stroke: #4a4a46;
-    stroke-width: 2;
+    stroke: #35342f;
+    stroke-width: 3;
   }
 
   .map-node {
-    fill: #f3f4f1;
-    stroke: #4a4a46;
-    stroke-width: 2;
+    fill: #f4f2ec;
+    stroke: #35342f;
+    stroke-width: 3;
   }
 
   .map-hub {
-    fill: #0b4f8a;
-    stroke: #0b4f8a;
-    stroke-width: 2;
+    fill: #35342f;
+    stroke: #35342f;
+    stroke-width: 3;
   }
 
   .map-label {
     font-size: 15px;
-    fill: #1d1d1b;
+    fill: #35342f;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
 
-  /* The centre label sits on dark blue, so it needs white text (about 8.7:1 contrast). */
+  /* The centre label sits on the charcoal, so it needs white text (about 11:1 contrast). */
   .map-label-hub {
     fill: #ffffff;
     font-weight: 700;
@@ -170,6 +170,6 @@ const offsets = (count: number) => Array.from({ length: count }, (_, i) => (i - 
   }
 
   .circle-map a:hover .map-node {
-    fill: #e4e8df;
+    fill: #e8e4d8;
   }
 </style>

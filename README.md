@@ -218,6 +218,22 @@ Search only works on the built site, so use `npm run build` followed by `npm run
 
 ---
 
+## Brand and design
+
+The look comes from the Connected Community logo: charcoal ink (`#35342f`), a hand-made wave, and chunky outlines. The images are in [public/brand/](public/brand/):
+
+| File | Used for |
+|---|---|
+| `lockup.png`, `lockup-sm.png` | The "connected community / marine estate" logo: the home page heading and the header. |
+| `wordmark.png`, `wordmark-sm.png` | The plain "connected community" logo: the About page. |
+| `mark.png`, `mark-sm.png` | The arch mark: the menu, the 404 page and the favicon. |
+| `*-white.png` | White versions of each logo, for the dark footer. |
+| `favicon.png` | The browser tab icon, and the editor's login page. |
+
+All are transparent PNGs made from the original logo files. To change the logo, replace these files and keep the same names. The page frame (header, menu and footer) is in [src/layouts/Base.astro](src/layouts/Base.astro), and the colours and wave are at the top of [src/styles/global.css](src/styles/global.css).
+
+Logo images used as the page heading carry the words as their alternative text. Decorative copies have empty alternative text, so screen readers do not read the name twice.
+
 ## Notes for maintainers
 
 - **Schemas** live in [src/content.config.ts](src/content.config.ts). To add a field, add it there, then add it to the form in [public/admin/config.yml](public/admin/config.yml).
