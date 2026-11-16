@@ -101,6 +101,8 @@ const meetings = defineCollection({
   schema: z.object({
     date: dateField('date'),
     circle: link('circles'),
+    // The person leading the meeting.
+    leader: link('people').nullish(),
     facilitator: link('people').nullish(),
     minute_taker: link('people').nullish(),
     attendees: z.array(link('people')).default([]),

@@ -1,6 +1,9 @@
 ---
 date: "2026-09-02"
 circle: connectors-circle
+leader: brad
+facilitator: charles
+minute_taker: brad
 agenda: "Street updates (Mike, Charles)\nCouncil ward committees (Charles)\nAdmin-only group for certain posts, policy proposal (Brad)\nBranding ideas\nAction list review (Brad)\nFun vibe ideas"
 decisions: "Admin-only announcements WhatsApp group approved for a trial period\nAI-generated branding package rejected; Corli to lead a community-driven design project"
 visibility: public

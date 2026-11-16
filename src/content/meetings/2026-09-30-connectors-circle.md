@@ -1,6 +1,9 @@
 ---
 date: "2026-09-30"
 circle: connectors-circle
+leader: brad
+facilitator: charles
+minute_taker: brad
 agenda: "Action item updates\nEntrepreneurship development idea (Wendy)\nReport on Vlei cleaning\nTech4Good launch\nGreening and vlei care group event"
 decisions: ""
 visibility: public

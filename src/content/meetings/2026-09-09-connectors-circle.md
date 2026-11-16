@@ -1,6 +1,9 @@
 ---
 date: "2026-09-09"
 circle: connectors-circle
+leader: brad
+facilitator: charles
+minute_taker: brad
 agenda: "Street updates: Charles, Corli"
 decisions: ""
 visibility: public

@@ -1,6 +1,9 @@
 ---
 date: "2026-07-29"
 circle: connectors-circle
+leader: brad
+facilitator: charles
+minute_taker: brad
 agenda: "Dignity Project update (Alwyn)\nMLRA feedback and way forward (Corli)\nAdmin person election\nPolicy proposal on sharing links and information in groups (Brad)"
 decisions: "Policy proposal: Participation Steward role (put forward for decision; result not recorded)"
 visibility: public

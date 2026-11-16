@@ -1,6 +1,9 @@
 ---
 date: "2026-08-19"
 circle: connectors-circle
+leader: brad
+facilitator: charles
+minute_taker: brad
 agenda: "Street group updates\nNew film viewing and open gardens\nDignity Project updates\nParticipatory budgeting experiment"
 decisions: ""
 visibility: public

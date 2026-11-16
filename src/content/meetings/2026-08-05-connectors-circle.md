@@ -1,6 +1,9 @@
 ---
 date: "2026-08-05"
 circle: connectors-circle
+leader: brad
+facilitator: charles
+minute_taker: brad
 agenda: "Grofree updates (Charles)\nUpdates for various group leaders (Brad)\nAttendees to invite one new person (Brad)\nIdeas to extend the community (Mike)"
 decisions: "Attendees to invite one new person (marked as a decision; the detail is not recorded)"
 visibility: public

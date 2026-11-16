@@ -1,6 +1,9 @@
 ---
 date: "2026-07-08"
 circle: connectors-circle
+leader: brad
+facilitator: charles
+minute_taker: brad
 agenda: "Definition and purpose of a General Community Circle, including roles\nGroup updates: MLRA Advisory Circle and closing dormant groups\nCompost bins at Muizenberg High School"
 decisions: "MLRA Advisory Circle created within the General Community Circle (approved by consent)\nClose the dormant groups Activating Common Spaces and Learning Circle (approved by consent)"
 visibility: public

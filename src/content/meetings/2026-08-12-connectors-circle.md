@@ -1,6 +1,9 @@
 ---
 date: "2026-08-12"
 circle: connectors-circle
+leader: brad
+facilitator: charles
+minute_taker: brad
 agenda: "Mandy Marr meeting feedback (Brad)\nWebsite prototype launch\nTrash to Treasure request\nThe Dignity Project update"
 decisions: ""
 visibility: public

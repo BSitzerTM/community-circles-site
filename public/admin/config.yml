@@ -129,6 +129,14 @@ collections:
         search_fields: [name]
         value_field: "{{slug}}"
         display_fields: [name]
+      - label: Leader
+        name: leader
+        widget: relation
+        collection: people
+        search_fields: [name]
+        value_field: "{{slug}}"
+        display_fields: [name]
+        required: false
       - label: Facilitator
         name: facilitator
         widget: relation

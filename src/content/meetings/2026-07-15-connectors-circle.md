@@ -1,6 +1,9 @@
 ---
 date: "2026-07-15"
 circle: connectors-circle
+leader: brad
+facilitator: charles
+minute_taker: brad
 agenda: "Proposal: The Dignity Project (Vrygrond) becomes a CCME circle (Alwyn)\nMLRA support circle plan of action for the AGM (Corli)"
 decisions: "The Dignity Project becomes a CCME circle with its own WhatsApp group and the same governance as the others (proposed by Alwyn)"
 visibility: public

@@ -30,6 +30,8 @@ const circleName = dir.circleName(meeting.data.circle);
   <dl>
     <dt>Circle</dt>
     <dd><a href={url(`circles/${meeting.data.circle}/`)}>{circleName}</a></dd>
+    <dt>Leader</dt>
+    <dd>{dir.personName(meeting.data.leader) || 'Not recorded'}</dd>
     <dt>Facilitator</dt>
     <dd>{dir.personName(meeting.data.facilitator) || 'Not recorded'}</dd>
     <dt>Minute-taker</dt>
