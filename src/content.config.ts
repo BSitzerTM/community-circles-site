@@ -7,7 +7,7 @@
  * problem in plain English.
  *
  * Linked records (for example a role's circle) are written as the file name
- * without its extension, e.g. `circle: general-circle-ccme`. The
+ * without its extension, e.g. `circle: connectors-circle`. The
  * `reference()` helper checks that the linked record exists.
  */
 import { defineCollection, reference } from 'astro:content';

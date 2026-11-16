@@ -24,7 +24,7 @@ public_folder: /uploads
 publish_mode: simple
 
 # Each relation field stores the file name of the record (for example
-# "general-circle-ccme"). That is the id the site uses to link records.
+# "connectors-circle"). That is the id the site uses to link records.
 collections:
   - name: people
     label: People

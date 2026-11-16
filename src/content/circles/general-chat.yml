@@ -1,0 +1,4 @@
+name: "General Chat"
+aim: "An open chat where there are no stupid questions: anyone can ask anything."
+description: "A normal circle that anyone can join. Ask anything, however small."
+parent: connectors-circle

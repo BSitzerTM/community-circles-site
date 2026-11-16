@@ -9,18 +9,105 @@ const circles = [...dir.circles].sort((a, b) => {
   const bTop = b.data.parent ? 1 : 0;
   return aTop - bTop || a.data.name.localeCompare(b.data.name);
 });
+
+/** Splits a name into lines of about `max` characters, so it fits inside a circle. */
+function wrap(text: string, max = 13): string[] {
+  const lines: string[] = [];
+  let current = '';
+  for (const word of text.split(' ')) {
+    if (current && (current + ' ' + word).length > max) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = current ? current + ' ' + word : word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+// --- Diagram layout ---------------------------------------------------------
+// The Connectors Circle (the top-level circle) is in the centre. Every other
+// circle sits on a ring around it, joined to the centre by a line.
+const hub = circles.find((c) => !c.data.parent);
+const spokes = circles.filter((c) => c !== hub);
+const size = 800;
+const centre = size / 2;
+const ringRadius = 290;
+const spokeRadius = 62;
+const hubRadius = 92;
+
+const nodes = spokes.map((c, i) => {
+  // Start at the top and go clockwise so the circles are spread evenly.
+  const angle = -Math.PI / 2 + (2 * Math.PI * i) / spokes.length;
+  return {
+    id: c.id,
+    lines: wrap(c.data.name),
+    x: centre + ringRadius * Math.cos(angle),
+    y: centre + ringRadius * Math.sin(angle),
+  };
+});
+
+/** Vertical offsets so a block of text lines is centred on the circle's middle. */
+const lineHeight = 18;
+const offsets = (count: number) => Array.from({ length: count }, (_, i) => (i - (count - 1) / 2) * lineHeight + 5);
 ---
 <Base title="Circles">
   <h1>Circles</h1>
   <p class="lede">A circle is a team with a clear aim. Each circle has roles, meets regularly and makes its own decisions.</p>
 
+  {
+    hub ? (
+      <section aria-labelledby="map-heading">
+        <h2 id="map-heading">How the circles connect</h2>
+        <p class="section-note">
+          The {hub.data.name} is at the centre. Every other circle connects to it. The full list of circles is below the map.
+        </p>
+        <svg
+          class="circle-map"
+          viewBox={`0 0 ${size} ${size}`}
+          role="group"
+          aria-label={`Map of ${spokes.length} circles connected to the ${hub.data.name}. The same circles are listed below.`}
+        >
+          {/* Lines first, so the circles are drawn on top of them. */}
+          {nodes.map((n) => (
+            <line x1={centre} y1={centre} x2={n.x} y2={n.y} class="map-line" />
+          ))}
+
+          {nodes.map((n) => (
+            <a href={url(`circles/${n.id}/`)}>
+              <title>{dir.circleName(n.id)}</title>
+              <circle cx={n.x} cy={n.y} r={spokeRadius} class="map-node" />
+              <text text-anchor="middle" class="map-label">
+                {n.lines.map((line, i) => (
+                  <tspan x={n.x} y={n.y + offsets(n.lines.length)[i]}>{line}</tspan>
+                ))}
+              </text>
+            </a>
+          ))}
+
+          <a href={url(`circles/${hub.id}/`)}>
+            <title>{hub.data.name}</title>
+            <circle cx={centre} cy={centre} r={hubRadius} class="map-hub" />
+            <text text-anchor="middle" class="map-label map-label-hub">
+              {wrap(hub.data.name, 14).map((line, i, all) => (
+                <tspan x={centre} y={centre + offsets(all.length)[i]}>{line}</tspan>
+              ))}
+            </text>
+          </a>
+        </svg>
+      </section>
+    ) : null
+  }
+
+  <h2>All circles</h2>
   <ul class="card-list">
     {
       circles.map((circle) => (
         <li class="card">
-          <h2 class="card-title">
+          <h3 class="card-title">
             <a href={url(`circles/${circle.id}/`)}>{circle.data.name}</a>
-          </h2>
+          </h3>
           <p>{circle.data.aim}</p>
           {circle.data.parent ? (
             <p class="meta">Part of {dir.circleName(circle.data.parent)}</p>
@@ -32,3 +119,57 @@ const circles = [...dir.circles].sort((a, b) => {
     }
   </ul>
 </Base>
+
+<style>
+  .circle-map {
+    width: 100%;
+    max-width: 40rem;
+    height: auto;
+    display: block;
+    margin: 1rem auto;
+  }
+
+  .map-line {
+    stroke: #4a4a46;
+    stroke-width: 2;
+  }
+
+  .map-node {
+    fill: #f3f4f1;
+    stroke: #4a4a46;
+    stroke-width: 2;
+  }
+
+  .map-hub {
+    fill: #0b4f8a;
+    stroke: #0b4f8a;
+    stroke-width: 2;
+  }
+
+  .map-label {
+    font-size: 15px;
+    fill: #1d1d1b;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* The centre label sits on dark blue, so it needs white text (about 8.7:1 contrast). */
+  .map-label-hub {
+    fill: #ffffff;
+    font-weight: 700;
+  }
+
+  /* Keyboard focus: thicken the ring of the focused circle. */
+  .circle-map a:focus {
+    outline: none;
+  }
+
+  .circle-map a:focus .map-node,
+  .circle-map a:focus .map-hub {
+    stroke: #b35c00;
+    stroke-width: 5;
+  }
+
+  .circle-map a:hover .map-node {
+    fill: #e4e8df;
+  }
+</style>
