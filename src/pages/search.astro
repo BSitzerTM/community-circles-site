@@ -1,0 +1,69 @@
+---
+/*
+ * Site-wide search, powered by Pagefind.
+ * Pagefind builds its index after `astro build` (see the "build" script in package.json),
+ * so the search only finds what is actually published.
+ */
+import Base from '../layouts/Base.astro';
+import { url } from '../lib/records';
+---
+<Base title="Search">
+  <h1>Search</h1>
+  <p class="lede">Search the whole site: circles, roles, meetings, decisions, actions and people.</p>
+
+  <form role="search" action="" onsubmit="return false;">
+    <label for="search-input" class="sr-only">Search the site</label>
+    <input id="search-input" type="search" autocomplete="off" placeholder="Type to search" />
+  </form>
+  <p class="filter-count" id="search-status" aria-live="polite"></p>
+  <ul class="search-results" id="search-results"></ul>
+  <!-- The base path is passed in so the script can find Pagefind's files on GitHub Pages. -->
+  <div id="search-config" data-base={url()} hidden></div>
+</Base>
+
+<script is:inline>
+  // Loads Pagefind's search module from the site and runs a search as the user types.
+  (async () => {
+    const base = document.getElementById('search-config')?.dataset.base ?? '/';
+    const input = document.getElementById('search-input');
+    const status = document.getElementById('search-status');
+    const list = document.getElementById('search-results');
+    if (!input || !list || !status) return;
+
+    let pagefind;
+    try {
+      pagefind = await import(/* @vite-ignore */ base + 'pagefind/pagefind.js');
+      await pagefind.init();
+    } catch (error) {
+      status.textContent = 'Search is only available on the built site, not in development.';
+      return;
+    }
+
+    let timer;
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const term = input.value.trim();
+        list.replaceChildren();
+        if (!term) {
+          status.textContent = '';
+          return;
+        }
+        const search = await pagefind.search(term);
+        status.textContent = search.results.length + ' page(s) found';
+        const results = await Promise.all(search.results.slice(0, 20).map((r) => r.data()));
+        for (const result of results) {
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = result.url;
+          link.textContent = result.meta.title || result.url;
+          const excerpt = document.createElement('p');
+          excerpt.className = 'muted';
+          excerpt.innerHTML = result.excerpt; // Pagefind's excerpt is already escaped and marks matches with <mark>.
+          item.append(link, excerpt);
+          list.append(item);
+        }
+      }, 200);
+    });
+  })();
+</script>

@@ -1,0 +1,80 @@
+---
+import Base from '../../layouts/Base.astro';
+import Badge from '../../components/Badge.astro';
+import { allRoles, directory, formatDate, today, url } from '../../lib/records';
+
+// One page per role.
+export async function getStaticPaths() {
+  const roles = await allRoles();
+  return roles.map((role) => ({ params: { id: role.id } }));
+}
+
+const { id } = Astro.params;
+const now = today();
+const dir = await directory();
+const all = await allRoles();
+const role = all.find((r) => r.id === id)!;
+
+// History: every role with the same title in the same circle, newest first.
+// This shows the succession of holders, including the current one.
+const history = all
+  .filter((r) => r.data.circle === role.data.circle && r.data.title === role.data.title)
+  .sort((a, b) => b.data.start_date.localeCompare(a.data.start_date));
+---
+<Base title={role.data.title}>
+  <p class="meta">
+    <a href={url('roles/')}>All roles</a>
+  </p>
+  <h1>{role.data.title}</h1>
+  <p class="meta">
+    <span>
+      <a href={url(`circles/${role.data.circle}/`)}>{dir.circleName(role.data.circle)}</a>
+    </span>
+    <span>
+      {role.data.status === 'active' ? <Badge tone="good">Active</Badge> : <Badge tone="neutral">Ended</Badge>}
+    </span>
+  </p>
+
+  <dl>
+    <dt>Holder</dt>
+    <dd>
+      {role.data.holder ? (
+        <a href={url(`people/${role.data.holder}/`)}>{dir.personName(role.data.holder)}</a>
+      ) : (
+        'Vacant'
+      )}
+    </dd>
+    <dt>Term</dt>
+    <dd>{formatDate(role.data.start_date)} to {formatDate(role.data.term_end)}</dd>
+    {
+      role.data.status === 'active' && role.data.term_end < now ? (
+        <>
+          <dt>Note</dt>
+          <dd><Badge tone="alert">The term has passed</Badge> Please confirm whether the role has been renewed.</dd>
+        </>
+      ) : null
+    }
+    {
+      role.data.responsibilities ? (
+        <>
+          <dt>Responsibilities</dt>
+          <dd>{role.data.responsibilities}</dd>
+        </>
+      ) : null
+    }
+  </dl>
+
+  <h2>History of this role</h2>
+  <ol>
+    {
+      history.map((h) => (
+        <li>
+          <a href={url(`roles/${h.id}/`)}>{dir.personName(h.data.holder) || 'Vacant'}</a>,{' '}
+          {formatDate(h.data.start_date)} to {formatDate(h.data.term_end)}
+          {h.data.status === 'active' ? <Badge tone="good">Current</Badge> : null}
+          {h.id === role.id ? <span class="muted"> (this page)</span> : null}
+        </li>
+      ))
+    }
+  </ol>
+</Base>

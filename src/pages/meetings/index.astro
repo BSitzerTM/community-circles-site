@@ -1,0 +1,63 @@
+---
+import Base from '../../layouts/Base.astro';
+import { byDate, directory, formatDate, publicMeetings, url } from '../../lib/records';
+
+// Only public, published meetings. Drafts and members-only meetings are never listed.
+const dir = await directory();
+const meetings = byDate(await publicMeetings());
+---
+<Base title="Meetings">
+  <h1>Meetings</h1>
+  <p class="lede">Minutes of published meetings. Search, or filter by circle and date.</p>
+
+  <div class="filters" data-filter-root>
+    <label>
+      Search
+      <input type="text" data-filter-control data-filter-key="text" data-match="contains" placeholder="e.g. budget" />
+    </label>
+    <label>
+      Circle
+      <select data-filter-control data-filter-key="circle">
+        <option value="">All circles</option>
+        {dir.circles.map((c) => <option value={c.id}>{c.data.name}</option>)}
+      </select>
+    </label>
+    <label>
+      From
+      <input type="date" data-filter-control data-filter-key="date" data-match="min" />
+    </label>
+    <label>
+      To
+      <input type="date" data-filter-control data-filter-key="date" data-match="max" />
+    </label>
+    <p class="filter-count" data-filter-count aria-live="polite"></p>
+
+    <ul class="card-list" style="width: 100%">
+      {
+        meetings.map((m) => {
+          const circleName = dir.circleName(m.data.circle);
+          const text = [circleName, m.data.agenda ?? '', m.data.decisions ?? ''].join(' ').toLowerCase();
+          return (
+            <li class="card" data-filter-item data-circle={m.data.circle} data-date={m.data.date} data-text={text}>
+              <h2 class="card-title">
+                <a href={url(`meetings/${m.id}/`)}>
+                  {circleName}, {formatDate(m.data.date)}
+                </a>
+              </h2>
+              <p class="meta">
+                <span>Facilitator: {dir.personName(m.data.facilitator) || 'Not recorded'}</span>
+                <span>Minutes by: {dir.personName(m.data.minute_taker) || 'Not recorded'}</span>
+              </p>
+            </li>
+          );
+        })
+      }
+    </ul>
+    <p class="empty" data-filter-empty hidden>No meetings match these filters.</p>
+  </div>
+</Base>
+
+<script>
+  import { initFilters } from '../../scripts/filter';
+  initFilters();
+</script>

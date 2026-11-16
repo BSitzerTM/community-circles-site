@@ -1,0 +1,27 @@
+{
+  "name": "community-circles-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Public record for a sociocracy-run group: circles, roles, meetings, decisions and actions.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "node scripts/check-links.mjs && astro build && pagefind --site dist && node scripts/check-privacy.mjs",
+    "preview": "astro preview",
+    "check": "astro check",
+    "alerts": "node scripts/check-alerts.mjs"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "astro": "^7.4.12",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "pagefind": "^1.6.0",
+    "typescript": "^6.0.3"
+  }
+}

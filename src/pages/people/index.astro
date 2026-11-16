@@ -1,0 +1,26 @@
+---
+import Base from '../../layouts/Base.astro';
+import { allPeople, assetUrl, url } from '../../lib/records';
+
+const people = (await allPeople()).sort((a, b) => a.data.name.localeCompare(b.data.name));
+---
+<Base title="People">
+  <h1>People</h1>
+  <p class="lede">The people who take part in the group, and the roles and actions they hold.</p>
+
+  <ul class="card-list">
+    {
+      people.map((p) => (
+        <li class="card">
+          <div class="person-head">
+            {p.data.photo ? <img class="photo" src={assetUrl(p.data.photo)} alt="" width="112" height="112" /> : null}
+            <div>
+              <h2 class="card-title"><a href={url(`people/${p.id}/`)}>{p.data.name}</a></h2>
+              {p.data.bio ? <p>{p.data.bio}</p> : null}
+            </div>
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+</Base>

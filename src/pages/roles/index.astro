@@ -1,0 +1,91 @@
+---
+import Base from '../../layouts/Base.astro';
+import Badge from '../../components/Badge.astro';
+import { allRoles, directory, formatDate, today, url } from '../../lib/records';
+
+const now = today();
+const dir = await directory();
+// Sort by circle name, then role title, then holder's term end.
+const roles = (await allRoles()).sort(
+  (a, b) =>
+    dir.circleName(a.data.circle).localeCompare(dir.circleName(b.data.circle)) ||
+    a.data.title.localeCompare(b.data.title) ||
+    a.data.term_end.localeCompare(b.data.term_end),
+);
+---
+<Base title="Roles">
+  <h1>Roles: who holds what</h1>
+  <p class="lede">
+    Each role belongs to a circle and has a holder and a term. Ended roles stay on the site, so you can see
+    the history. Select a role to see every holder it has had.
+  </p>
+
+  <!-- The filters work without JavaScript, but then every row is shown. -->
+  <div data-filter-root>
+    <div class="filters">
+      <label>
+        Circle
+        <select data-filter-control data-filter-key="circle">
+          <option value="">All circles</option>
+          {dir.circles.map((c) => <option value={c.id}>{c.data.name}</option>)}
+        </select>
+      </label>
+      <label>
+        Status
+        <select data-filter-control data-filter-key="status">
+          <option value="">All roles</option>
+          <option value="active" selected>Active only</option>
+          <option value="ended">Ended only</option>
+        </select>
+      </label>
+      <p class="filter-count" data-filter-count aria-live="polite"></p>
+    </div>
+
+  <div class="table-wrap">
+    <table>
+      <caption class="sr-only">Roles, with circle, holder, term and status</caption>
+      <thead>
+        <tr>
+          <th scope="col">Role</th>
+          <th scope="col">Circle</th>
+          <th scope="col">Holder</th>
+          <th scope="col">Term</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          roles.map((role) => (
+            <tr data-filter-item data-circle={role.data.circle} data-status={role.data.status}>
+              <th scope="row">
+                <a href={url(`roles/${role.id}/`)}>{role.data.title}</a>
+              </th>
+              <td>{dir.circleName(role.data.circle)}</td>
+              <td>{dir.personName(role.data.holder) || 'Vacant'}</td>
+              <td>
+                {formatDate(role.data.start_date)} to {formatDate(role.data.term_end)}
+              </td>
+              <td>
+                {role.data.status === 'active' ? (
+                  <Badge tone="good">Active</Badge>
+                ) : (
+                  <Badge tone="neutral">Ended</Badge>
+                )}
+                {role.data.status === 'active' && role.data.term_end < now ? (
+                  <Badge tone="alert">Term passed</Badge>
+                ) : null}
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="empty" data-filter-empty hidden>No roles match these filters.</p>
+  </div>
+</Base>
+
+<script>
+  import { initFilters } from '../../scripts/filter';
+  initFilters();
+</script>

@@ -1,0 +1,149 @@
+---
+import Base from '../../layouts/Base.astro';
+import Badge from '../../components/Badge.astro';
+import {
+  allCircles,
+  allRoles,
+  byDate,
+  directory,
+  formatDate,
+  isOpenStatus,
+  isOverdue,
+  publicActions,
+  publicDecisions,
+  publicMeetings,
+  today,
+  url,
+} from '../../lib/records';
+
+// One page per circle.
+export async function getStaticPaths() {
+  const circles = await allCircles();
+  return circles.map((circle) => ({ params: { id: circle.id } }));
+}
+
+const { id } = Astro.params;
+const now = today();
+const dir = await directory();
+const circle = dir.circles.find((c) => c.id === id)!;
+
+// Current roles only. Ended roles are kept in the repo, and each role page shows its history.
+const currentRoles = (await allRoles()).filter((r) => r.data.circle === id && r.data.status === 'active');
+
+// Only public items. Members-only and draft items are excluded by these readers.
+const recentMeetings = byDate((await publicMeetings()).filter((m) => m.data.circle === id)).slice(0, 5);
+const openActions = (await publicActions())
+  .filter((a) => a.data.circle === id && isOpenStatus(a.data.status))
+  .sort((a, b) => a.data.due_date.localeCompare(b.data.due_date));
+const decisions = byDate((await publicDecisions()).filter((d) => d.data.circle === id));
+
+const members = circle.data.members.map((p) => ({ id: p, name: dir.personName(p) }));
+const subCircles = dir.circles.filter((c) => c.data.parent === id);
+---
+<Base title={circle.data.name} description={circle.data.aim}>
+  <p class="meta"><a href={url('circles/')}>All circles</a></p>
+  <h1>{circle.data.name}</h1>
+  <p class="lede">{circle.data.aim}</p>
+  {circle.data.description ? <p>{circle.data.description}</p> : null}
+  {
+    circle.data.parent ? (
+      <p class="meta">Part of <a href={url(`circles/${circle.data.parent}/`)}>{dir.circleName(circle.data.parent)}</a></p>
+    ) : null
+  }
+  {
+    subCircles.length > 0 ? (
+      <p class="meta">
+        Sub-circles:{' '}
+        {subCircles.map((c, i) => (
+          <>
+            {i > 0 ? ', ' : ''}
+            <a href={url(`circles/${c.id}/`)}>{c.data.name}</a>
+          </>
+        ))}
+      </p>
+    ) : null
+  }
+
+  <h2>Members</h2>
+  {
+    members.length === 0 ? (
+      <p class="empty">No members listed.</p>
+    ) : (
+      <ul>
+        {members.map((m) => (
+          <li><a href={url(`people/${m.id}/`)}>{m.name}</a></li>
+        ))}
+      </ul>
+    )
+  }
+
+  <h2>Current roles</h2>
+  {
+    currentRoles.length === 0 ? (
+      <p class="empty">No active roles in this circle.</p>
+    ) : (
+      <ul class="card-list">
+        {currentRoles.map((role) => (
+          <li class="card">
+            <h3><a href={url(`roles/${role.id}/`)}>{role.data.title}</a></h3>
+            <p class="meta">
+              <span>Holder: {dir.personName(role.data.holder) || 'Vacant'}</span>
+              <span>Term ends {formatDate(role.data.term_end)}</span>
+            </p>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  <h2>Recent meetings</h2>
+  {
+    recentMeetings.length === 0 ? (
+      <p class="empty">No published meetings yet.</p>
+    ) : (
+      <ul>
+        {recentMeetings.map((m) => (
+          <li><a href={url(`meetings/${m.id}/`)}>{formatDate(m.data.date)}</a></li>
+        ))}
+      </ul>
+    )
+  }
+
+  <h2>Open actions</h2>
+  {
+    openActions.length === 0 ? (
+      <p class="empty">No open actions.</p>
+    ) : (
+      <ul class="card-list">
+        {openActions.map((a) => (
+          <li class="card">
+            <h3>
+              {a.data.title}
+              {isOverdue(a.data, now) ? <Badge tone="alert">Overdue</Badge> : null}
+            </h3>
+            <p class="meta">
+              <span>Owner: {dir.personName(a.data.owner)}</span>
+              <span>Due {formatDate(a.data.due_date)}</span>
+              <span>Status: {a.data.status}</span>
+            </p>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  <h2>Decisions</h2>
+  {
+    decisions.length === 0 ? (
+      <p class="empty">No decisions recorded for this circle.</p>
+    ) : (
+      <ul>
+        {decisions.map((d) => (
+          <li>
+            <a href={url('decisions/')}>{d.data.title}</a> ({formatDate(d.data.date)})
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</Base>

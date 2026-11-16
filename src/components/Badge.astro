@@ -1,0 +1,12 @@
+---
+/*
+ * A small label such as "Overdue" or "Ended".
+ * Status is always shown as words, never only as colour.
+ * tone sets the colour: "alert", "warn", "good" or "neutral".
+ */
+interface Props {
+  tone?: 'alert' | 'warn' | 'good' | 'neutral';
+}
+const { tone = 'neutral' } = Astro.props;
+---
+<span class={`badge badge-${tone}`}><slot /></span>

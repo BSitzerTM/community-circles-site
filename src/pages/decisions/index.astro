@@ -1,0 +1,58 @@
+---
+import Base from '../../layouts/Base.astro';
+import Badge from '../../components/Badge.astro';
+import { addDays, byDate, daysBetween, directory, formatDate, publicDecisions, publicMeetings, today, url } from '../../lib/records';
+
+const now = today();
+const soon = addDays(now, 60);
+const dir = await directory();
+const decisions = byDate(await publicDecisions());
+
+// Only link to a meeting that is itself public and published.
+const publicMeetingIds = new Set((await publicMeetings()).map((m) => m.id));
+---
+<Base title="Decisions">
+  <h1>Decisions</h1>
+  <p class="lede">
+    Each decision records the proposal, the outcome and a date to review it. Reviews due in the next 60 days are highlighted.
+  </p>
+
+  {
+    decisions.length === 0 ? (
+      <p class="empty">No public decisions recorded yet.</p>
+    ) : (
+      <ul class="card-list">
+        {decisions.map((d) => {
+          const reviewIn = daysBetween(now, d.data.review_date);
+          const reviewSoon = reviewIn >= 0 && d.data.review_date <= soon;
+          const reviewPassed = d.data.review_date < now;
+          return (
+            <li class={`card${reviewSoon || reviewPassed ? ' card-review' : ''}`} id={d.id}>
+              <h2 class="card-title">{d.data.title}</h2>
+              <p class="meta">
+                <span>{dir.circleName(d.data.circle)}</span>
+                <span>Decided {formatDate(d.data.date)}</span>
+              </p>
+              <p><strong>Proposal:</strong> {d.data.proposal}</p>
+              <p><strong>Outcome:</strong> {d.data.outcome || 'Still open'}</p>
+              <p class="meta">
+                <span>
+                  Review on {formatDate(d.data.review_date)}
+                  {reviewPassed ? <Badge tone="alert">Review date passed</Badge> : null}
+                  {reviewSoon && !reviewPassed ? <Badge tone="warn">Review due in {reviewIn} days</Badge> : null}
+                </span>
+                {
+                  d.data.linked_meeting && publicMeetingIds.has(d.data.linked_meeting) ? (
+                    <span>
+                      <a href={url(`meetings/${d.data.linked_meeting}/`)}>Meeting minutes</a>
+                    </span>
+                  ) : null
+                }
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+    )
+  }
+</Base>

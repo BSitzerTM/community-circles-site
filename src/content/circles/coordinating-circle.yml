@@ -1,0 +1,8 @@
+name: Coordinating Circle
+aim: Keeps the group's roles, meetings and decisions working together.
+description: The top-level circle. It sets the group's priorities, agrees the budget and holds the group's records.
+parent:
+members:
+  - thandi-mokoena
+  - sam-van-der-merwe
+  - priya-naidoo

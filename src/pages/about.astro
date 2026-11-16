@@ -1,0 +1,42 @@
+---
+import Base from '../layouts/Base.astro';
+import { REPO_URL, url } from '../lib/records';
+---
+<Base title="About">
+  <h1>About this site</h1>
+  <p class="lede">
+    This site is the group's public record. It is made of plain files kept in a Git repository, so every
+    change is saved with who made it and when.
+  </p>
+
+  <h2>What you can find here</h2>
+  <ul>
+    <li><strong>Circles</strong>: the teams in the group, what each one is for, and who is in it.</li>
+    <li><strong>Roles</strong>: who holds each role, and when the term ends. Past holders stay on the site.</li>
+    <li><strong>Meetings</strong>: minutes of published meetings.</li>
+    <li><strong>Decisions</strong>: what was proposed, what was agreed, and when it will be reviewed.</li>
+    <li><strong>Actions</strong>: what someone has agreed to do, by when, and whether it is done.</li>
+    <li><strong>People</strong>: who takes part, and what they hold.</li>
+  </ul>
+
+  <h2>How the site is kept up to date</h2>
+  <ul>
+    <li>Each change is a commit in the Git repository, so the full history is kept.</li>
+    <li>The site is rebuilt automatically whenever a change is saved, and every day.</li>
+    <li>Daily checks flag overdue actions and role terms that end within 30 days, by opening a GitHub issue.</li>
+    <li>Items marked members-only, and draft meetings, are left out of the public site entirely.</li>
+  </ul>
+
+  <h2>How to edit it</h2>
+  <p>
+    Editors use the admin page at <a href={url('admin/')}>the admin page</a>, which provides forms for each
+    kind of record. The step-by-step guide is in
+    <a href={`${REPO_URL}/blob/main/EDITING.md`}>EDITING.md</a> in the repository.
+  </p>
+
+  <h2>Open source</h2>
+  <p>
+    The code and the content are open source under the MIT licence. Anyone can read the history, suggest a
+    change or help maintain the site: <a href={REPO_URL}>{REPO_URL.replace('https://', '')}</a>.
+  </p>
+</Base>

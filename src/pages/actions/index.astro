@@ -1,0 +1,104 @@
+---
+import Base from '../../layouts/Base.astro';
+import Badge from '../../components/Badge.astro';
+import { daysBetween, directory, formatDate, isOverdue, publicActions, today, url } from '../../lib/records';
+
+const now = today();
+const dir = await directory();
+// Overdue items first, then by due date.
+const actions = (await publicActions()).sort((a, b) => {
+  const aOver = isOverdue(a.data, now) ? 0 : 1;
+  const bOver = isOverdue(b.data, now) ? 0 : 1;
+  return aOver - bOver || a.data.due_date.localeCompare(b.data.due_date);
+});
+
+const people = [...dir.people].sort((a, b) => a.data.name.localeCompare(b.data.name));
+const statuses = ['open', 'in progress', 'done', 'dropped'];
+---
+<Base title="Actions">
+  <h1>Actions</h1>
+  <p class="lede">
+    Things the group has agreed someone will do. Overdue actions are marked, and they are also shown on the home page.
+  </p>
+
+  <div data-filter-root>
+    <div class="filters">
+      <label>
+        Owner
+        <select data-filter-control data-filter-key="owner">
+          <option value="">Everyone</option>
+          {people.map((p) => <option value={p.id}>{p.data.name}</option>)}
+        </select>
+      </label>
+      <label>
+        Circle
+        <select data-filter-control data-filter-key="circle">
+          <option value="">All circles</option>
+          {dir.circles.map((c) => <option value={c.id}>{c.data.name}</option>)}
+        </select>
+      </label>
+      <label>
+        Status
+        <select data-filter-control data-filter-key="status">
+          <option value="">Any status</option>
+          {statuses.map((s) => <option value={s}>{s}</option>)}
+        </select>
+      </label>
+      <p class="filter-count" data-filter-count aria-live="polite"></p>
+    </div>
+
+  <div class="table-wrap">
+    <table>
+      <caption class="sr-only">Actions with owner, circle, due date and status</caption>
+      <thead>
+        <tr>
+          <th scope="col">Action</th>
+          <th scope="col">Owner</th>
+          <th scope="col">Circle</th>
+          <th scope="col">Due</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          actions.map((a) => {
+            const overdue = isOverdue(a.data, now);
+            const late = daysBetween(a.data.due_date, now);
+            return (
+              <tr
+                data-filter-item
+                data-owner={a.data.owner}
+                data-circle={a.data.circle}
+                data-status={a.data.status}
+                class={overdue ? 'row-overdue' : undefined}
+              >
+                <th scope="row">
+                  {a.data.title}
+                  {a.data.description ? <span class="meta"><br />{a.data.description}</span> : null}
+                  {a.data.notes ? <span class="meta"><br />Notes: {a.data.notes}</span> : null}
+                </th>
+                <td>{dir.personName(a.data.owner)}</td>
+                <td>{dir.circleName(a.data.circle)}</td>
+                <td>
+                  {formatDate(a.data.due_date)}
+                  {overdue ? <Badge tone="alert">Overdue by {late} day{late === 1 ? '' : 's'}</Badge> : null}
+                </td>
+                <td>{a.data.status}</td>
+              </tr>
+            );
+          })
+        }
+      </tbody>
+    </table>
+    <p class="empty" data-filter-empty hidden>No actions match these filters.</p>
+  </div>
+  </div>
+  <p class="meta">
+    Want to see an action's meeting? Open the <a href={url('meetings/')}>meetings</a> list.
+  </p>
+</Base>
+
+<script>
+  import { initFilters } from '../../scripts/filter';
+  initFilters();
+</script>

@@ -1,0 +1,34 @@
+---
+import Base from '../../layouts/Base.astro';
+import { directory, url } from '../../lib/records';
+
+const dir = await directory();
+// Sort so top-level circles come first, then their sub-circles, each group alphabetically.
+const circles = [...dir.circles].sort((a, b) => {
+  const aTop = a.data.parent ? 1 : 0;
+  const bTop = b.data.parent ? 1 : 0;
+  return aTop - bTop || a.data.name.localeCompare(b.data.name);
+});
+---
+<Base title="Circles">
+  <h1>Circles</h1>
+  <p class="lede">A circle is a team with a clear aim. Each circle has roles, meets regularly and makes its own decisions.</p>
+
+  <ul class="card-list">
+    {
+      circles.map((circle) => (
+        <li class="card">
+          <h2 class="card-title">
+            <a href={url(`circles/${circle.id}/`)}>{circle.data.name}</a>
+          </h2>
+          <p>{circle.data.aim}</p>
+          {circle.data.parent ? (
+            <p class="meta">Part of {dir.circleName(circle.data.parent)}</p>
+          ) : (
+            <p class="meta">Top-level circle</p>
+          )}
+        </li>
+      ))
+    }
+  </ul>
+</Base>

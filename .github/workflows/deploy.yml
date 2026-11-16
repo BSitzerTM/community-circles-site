@@ -1,0 +1,81 @@
+# BUILD, DEPLOY AND DAILY CHECKS
+#
+# - Every push to main builds the site and publishes it to GitHub Pages.
+# - Every day at 05:15 in South Africa (03:15 UTC) the site is rebuilt, so
+#   overdue and upcoming items stay current, and the alert job opens or
+#   closes GitHub issues for overdue actions and ending role terms.
+# - The privacy check runs inside `npm run build`. If it fails, nothing is deployed.
+
+name: Build, deploy and checks
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '15 3 * * *'
+
+permissions:
+  contents: read
+
+# Only one deployment runs at a time. A new push waits for the current one to finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Builds the site, builds the search index, then runs the privacy check.
+      - run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Runs only on the daily schedule (or when started by hand), not on every push.
+  alerts:
+    needs: build
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: node scripts/check-alerts.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

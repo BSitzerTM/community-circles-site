@@ -1,0 +1,122 @@
+---
+import Base from '../layouts/Base.astro';
+import Badge from '../components/Badge.astro';
+import {
+  addDays,
+  allRoles,
+  byDate,
+  daysBetween,
+  directory,
+  formatDate,
+  isOverdue,
+  publicActions,
+  publicMeetings,
+  today,
+  url,
+} from '../lib/records';
+
+// Built fresh each day by the scheduled workflow, so the "soon" and "overdue" lists stay current.
+const now = today();
+const horizon = addDays(now, 60);
+const dir = await directory();
+
+// Active roles whose term ends in the next 60 days.
+const endingRoles = (await allRoles())
+  .filter((r) => r.data.status === 'active' && r.data.term_end >= now && r.data.term_end <= horizon)
+  .sort((a, b) => a.data.term_end.localeCompare(b.data.term_end));
+
+// Public actions still open after their due date.
+const overdueActions = (await publicActions())
+  .filter((a) => isOverdue(a.data, now))
+  .sort((a, b) => a.data.due_date.localeCompare(b.data.due_date));
+
+const latestMeetings = byDate(await publicMeetings()).slice(0, 5);
+---
+<Base title="Home">
+  <h1>Community Circles</h1>
+  <p class="lede">
+    This site is the public record of how our group works. It shows the circles, who holds each role,
+    the meetings, the decisions taken and the actions agreed. Each change is saved in Git, so the history
+    of who decided what, and when, is kept.
+  </p>
+
+  <section aria-labelledby="ending-heading">
+    <h2 id="ending-heading">Role terms ending in the next 60 days</h2>
+    {
+      endingRoles.length === 0 ? (
+        <p class="empty">No role terms end in the next 60 days.</p>
+      ) : (
+        <ul class="card-list">
+          {endingRoles.map((role) => {
+            const days = daysBetween(now, role.data.term_end);
+            return (
+              <li class="card">
+                <h3>
+                  <a href={url(`roles/${role.id}/`)}>{role.data.title}</a>
+                  <span class="muted"> in {dir.circleName(role.data.circle)}</span>
+                </h3>
+                <p class="meta">
+                  <span>Holder: {dir.personName(role.data.holder) || 'Vacant'}</span>
+                  <span>
+                    Term ends {formatDate(role.data.term_end)}
+                    {days <= 30 ? <Badge tone="warn">Ends within 30 days</Badge> : null}
+                  </span>
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+  </section>
+
+  <section aria-labelledby="overdue-heading">
+    <h2 id="overdue-heading">Overdue actions</h2>
+    {
+      overdueActions.length === 0 ? (
+        <p class="empty">No public actions are overdue.</p>
+      ) : (
+        <ul class="card-list">
+          {overdueActions.map((action) => (
+            <li class="card">
+              <h3>
+                <a href={url('actions/')}>{action.data.title}</a>
+                <Badge tone="alert">Overdue</Badge>
+              </h3>
+              <p class="meta">
+                <span>Owner: {dir.personName(action.data.owner)}</span>
+                <span>Due {formatDate(action.data.due_date)}</span>
+                <span>Status: {action.data.status}</span>
+              </p>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </section>
+
+  <section aria-labelledby="meetings-heading">
+    <h2 id="meetings-heading">Latest meetings</h2>
+    {
+      latestMeetings.length === 0 ? (
+        <p class="empty">No published meetings yet.</p>
+      ) : (
+        <ul class="card-list">
+          {latestMeetings.map((meeting) => (
+            <li class="card">
+              <h3>
+                <a href={url(`meetings/${meeting.id}/`)}>
+                  {dir.circleName(meeting.data.circle)}, {formatDate(meeting.data.date)}
+                </a>
+              </h3>
+              <p class="meta">
+                <span>Facilitator: {dir.personName(meeting.data.facilitator) || 'Not recorded'}</span>
+              </p>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+    <p><a href={url('meetings/')}>All meetings</a></p>
+  </section>
+</Base>

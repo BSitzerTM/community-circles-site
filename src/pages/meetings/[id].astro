@@ -1,0 +1,91 @@
+---
+import Base from '../../layouts/Base.astro';
+import { directory, formatDate, publicActions, publicDecisions, publicMeetings, url } from '../../lib/records';
+import { render } from 'astro:content';
+
+// One page per published, public meeting. Anything else gets no page at all.
+export async function getStaticPaths() {
+  const meetings = await publicMeetings();
+  return meetings.map((meeting) => ({ params: { id: meeting.id }, props: { meeting } }));
+}
+
+const { meeting } = Astro.props;
+const dir = await directory();
+const { Content } = await render(meeting);
+
+// Decisions and actions linked to this meeting. Only public ones are read.
+const decisions = (await publicDecisions()).filter((d) => d.data.linked_meeting === meeting.id);
+const actions = (await publicActions()).filter((a) => a.data.linked_meeting === meeting.id);
+
+const agendaItems = (meeting.data.agenda ?? '').split('\n').map((s) => s.trim()).filter(Boolean);
+const decisionLines = (meeting.data.decisions ?? '').split('\n').map((s) => s.trim()).filter(Boolean);
+const attendees = meeting.data.attendees.map((p) => dir.personName(p));
+const circleName = dir.circleName(meeting.data.circle);
+---
+<Base title={`${circleName}, ${formatDate(meeting.data.date)}`}>
+  <p class="meta"><a href={url('meetings/')}>All meetings</a></p>
+  <h1>{circleName}</h1>
+  <p class="lede">{formatDate(meeting.data.date)}</p>
+
+  <dl>
+    <dt>Circle</dt>
+    <dd><a href={url(`circles/${meeting.data.circle}/`)}>{circleName}</a></dd>
+    <dt>Facilitator</dt>
+    <dd>{dir.personName(meeting.data.facilitator) || 'Not recorded'}</dd>
+    <dt>Minute-taker</dt>
+    <dd>{dir.personName(meeting.data.minute_taker) || 'Not recorded'}</dd>
+    <dt>Attendees</dt>
+    <dd>{attendees.length > 0 ? attendees.join(', ') : 'Not recorded'}</dd>
+  </dl>
+
+  {
+    agendaItems.length > 0 ? (
+      <>
+        <h2>Agenda</h2>
+        <ol>{agendaItems.map((item) => <li>{item}</li>)}</ol>
+      </>
+    ) : null
+  }
+
+  <h2>Minutes</h2>
+  <div class="minutes">
+    <Content />
+  </div>
+
+  {
+    decisionLines.length > 0 ? (
+      <>
+        <h2>Decisions recorded at this meeting</h2>
+        <ul>{decisionLines.map((line) => <li>{line}</li>)}</ul>
+      </>
+    ) : null
+  }
+
+  {
+    decisions.length > 0 ? (
+      <>
+        <h2>Decision records</h2>
+        <ul>
+          {decisions.map((d) => (
+            <li><a href={url('decisions/#' + d.id)}>{d.data.title}</a></li>
+          ))}
+        </ul>
+      </>
+    ) : null
+  }
+
+  {
+    actions.length > 0 ? (
+      <>
+        <h2>Actions from this meeting</h2>
+        <ul>
+          {actions.map((a) => (
+            <li>
+              {a.data.title}: owner {dir.personName(a.data.owner)}, due {formatDate(a.data.due_date)}, status {a.data.status}
+            </li>
+          ))}
+        </ul>
+      </>
+    ) : null
+  }
+</Base>

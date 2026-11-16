@@ -1,0 +1,7 @@
+name: Events Circle
+aim: Plans and runs the group's public events.
+description: Works within the budget agreed by the Coordinating Circle.
+parent: coordinating-circle
+members:
+  - priya-naidoo
+  - sam-van-der-merwe

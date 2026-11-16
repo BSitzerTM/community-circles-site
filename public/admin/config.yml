@@ -1,0 +1,269 @@
+# DECAP CMS CONFIGURATION
+#
+# This file tells the editing page (/admin) which repository to use and
+# which forms to show. Editors fill in forms; Decap saves each record as a
+# file in src/content/ and commits it to the main branch.
+#
+# Before the GitHub login works you must:
+#   1. Deploy the free OAuth proxy (see the README, "Setting up editor login").
+#   2. Replace the base_url below with the proxy's address.
+
+backend:
+  name: github
+  repo: BSITZERTM/community-circles-site
+  branch: main
+  # Address of the OAuth proxy you deployed. Replace this placeholder.
+  base_url: https://YOUR-OAUTH-PROXY.example.workers.dev
+  auth_endpoint: auth
+
+# Uploaded photos are saved here and are published as part of the site.
+media_folder: public/uploads
+public_folder: /uploads
+
+# Commit straight to main. Each commit starts a new build.
+publish_mode: simple
+
+# Each relation field stores the file name of the record (for example
+# "coordinating-circle"). That is the id the site uses to link records.
+collections:
+  - name: people
+    label: People
+    folder: src/content/people
+    extension: yml
+    format: yml
+    create: true
+    slug: "{{fields.name | slugify}}"
+    summary: "{{fields.name}}"
+    sortable_fields: ["fields.name"]
+    fields:
+      - { label: Name, name: name, widget: string }
+      - { label: Short bio, name: bio, widget: text, required: false, hint: "One or two sentences." }
+      - { label: Photo, name: photo, widget: image, required: false, media_library: { config: { multiple: false } } }
+
+  - name: circles
+    label: Circles
+    folder: src/content/circles
+    extension: yml
+    format: yml
+    create: true
+    slug: "{{fields.name | slugify}}"
+    summary: "{{fields.name}}"
+    sortable_fields: ["fields.name"]
+    fields:
+      - { label: Name, name: name, widget: string }
+      - { label: Aim, name: aim, widget: string, hint: "One sentence on what the circle is for." }
+      - { label: Description, name: description, widget: text, required: false }
+      - label: Parent circle
+        name: parent
+        widget: relation
+        collection: circles
+        search_fields: [name]
+        value_field: "{{slug}}"
+        display_fields: [name]
+        required: false
+        hint: "Leave empty for a top-level circle."
+      - label: Members
+        name: members
+        widget: relation
+        collection: people
+        search_fields: [name]
+        value_field: "{{slug}}"
+        display_fields: [name]
+        multiple: true
+        required: false
+
+  - name: roles
+    label: Roles
+    folder: src/content/roles
+    extension: yml
+    format: yml
+    create: true
+    slug: "{{fields.circle}}-{{fields.title | slugify}}-{{fields.start_date}}"
+    summary: "{{fields.title}} ({{fields.status}})"
+    sortable_fields: ["fields.title", "fields.term_end", "fields.status"]
+    fields:
+      - { label: Title, name: title, widget: string }
+      - label: Circle
+        name: circle
+        widget: relation
+        collection: circles
+        search_fields: [name]
+        value_field: "{{slug}}"
+        display_fields: [name]
+      - label: Holder
+        name: holder
+        widget: relation
+        collection: people
+        search_fields: [name]
+        value_field: "{{slug}}"
+        display_fields: [name]
+        required: false
+        hint: "Leave empty if the role is vacant."
+      - { label: Start date, name: start_date, widget: datetime, date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD" }
+      - { label: Term end date, name: term_end, widget: datetime, date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD" }
+      - { label: Responsibilities, name: responsibilities, widget: text, required: false }
+      - label: Status
+        name: status
+        widget: select
+        default: active
+        options:
+          - { label: Active, value: active }
+          - { label: Ended, value: ended }
+        hint: "When a role ends, change this to Ended. Do not delete the record."
+
+  - name: meetings
+    label: Meetings
+    folder: src/content/meetings
+    extension: md
+    format: frontmatter
+    create: true
+    slug: "{{fields.date}}-{{fields.circle}}"
+    summary: "{{fields.date}} {{fields.circle}} ({{fields.status}})"
+    sortable_fields: ["fields.date", "fields.status"]
+    fields:
+      - { label: Date, name: date, widget: datetime, date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD" }
+      - label: Circle
+        name: circle
+        widget: relation
+        collection: circles
+        search_fields: [name]
+        value_field: "{{slug}}"
+        display_fields: [name]
+      - label: Facilitator
+        name: facilitator
+        widget: relation
+        collection: people
+        search_fields: [name]
+        value_field: "{{slug}}"
+        display_fields: [name]
+        required: false
+      - label: Minute-taker
+        name: minute_taker
+        widget: relation
+        collection: people
+        search_fields: [name]
+        value_field: "{{slug}}"
+        display_fields: [name]
+        required: false
+      - label: Attendees
+        name: attendees
+        widget: relation
+        collection: people
+        search_fields: [name]
+        value_field: "{{slug}}"
+        display_fields: [name]
+        multiple: true
+        required: false
+      - { label: Agenda, name: agenda, widget: text, required: false, hint: "One item per line." }
+      - { label: Decisions taken, name: decisions, widget: text, required: false, hint: "One decision per line. Write full decision records on the Decisions page." }
+      - label: Visibility
+        name: visibility
+        widget: select
+        default: public
+        options:
+          - { label: Public, value: public }
+          - { label: Members only, value: members }
+        hint: "Members-only meetings are left out of the public site."
+      - label: Status
+        name: status
+        widget: select
+        default: draft
+        options:
+          - { label: Draft (not published), value: draft }
+          - { label: Published, value: published }
+        hint: "Only published, public meetings appear on the site."
+      - label: Minutes
+        name: body
+        widget: markdown
+
+  - name: decisions
+    label: Decisions
+    folder: src/content/decisions
+    extension: yml
+    format: yml
+    create: true
+    slug: "{{fields.date}}-{{fields.title | slugify}}"
+    summary: "{{fields.title}} ({{fields.visibility}})"
+    sortable_fields: ["fields.date", "fields.review_date"]
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Decision date, name: date, widget: datetime, date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD" }
+      - label: Circle
+        name: circle
+        widget: relation
+        collection: circles
+        search_fields: [name]
+        value_field: "{{slug}}"
+        display_fields: [name]
+      - { label: Proposal, name: proposal, widget: text }
+      - { label: Outcome, name: outcome, widget: text, required: false, hint: "Leave empty while the outcome is still open." }
+      - { label: Review date, name: review_date, widget: datetime, date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD" }
+      - label: Linked meeting
+        name: linked_meeting
+        widget: relation
+        collection: meetings
+        search_fields: [date, circle]
+        value_field: "{{slug}}"
+        display_fields: ["{{date}} {{circle}}"]
+        required: false
+      - label: Visibility
+        name: visibility
+        widget: select
+        default: public
+        options:
+          - { label: Public, value: public }
+          - { label: Members only, value: members }
+
+  - name: actions
+    label: Actions
+    folder: src/content/actions
+    extension: yml
+    format: yml
+    create: true
+    slug: "{{fields.created_date}}-{{fields.title | slugify}}"
+    summary: "{{fields.title}} ({{fields.status}})"
+    sortable_fields: ["fields.due_date", "fields.status"]
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Description, name: description, widget: text, required: false }
+      - label: Owner
+        name: owner
+        widget: relation
+        collection: people
+        search_fields: [name]
+        value_field: "{{slug}}"
+        display_fields: [name]
+      - label: Circle
+        name: circle
+        widget: relation
+        collection: circles
+        search_fields: [name]
+        value_field: "{{slug}}"
+        display_fields: [name]
+      - { label: Created date, name: created_date, widget: datetime, date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD" }
+      - { label: Due date, name: due_date, widget: datetime, date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD" }
+      - label: Status
+        name: status
+        widget: select
+        default: open
+        options:
+          - { label: Open, value: open }
+          - { label: In progress, value: in progress }
+          - { label: Done, value: done }
+          - { label: Dropped, value: dropped }
+      - label: Linked meeting
+        name: linked_meeting
+        widget: relation
+        collection: meetings
+        search_fields: [date, circle]
+        value_field: "{{slug}}"
+        display_fields: ["{{date}} {{circle}}"]
+        required: false
+      - { label: Notes, name: notes, widget: text, required: false }
+      - label: Visibility
+        name: visibility
+        widget: select
+        default: public
+        options:
+          - { label: Public, value: public }
+          - { label: Members only, value: members }

@@ -1,0 +1,370 @@
+/*
+ * Plain CSS for the whole site.
+ * Colours are chosen to meet WCAG AA contrast (4.5:1 for text).
+ * Status is always shown with words as well as colour.
+ */
+
+:root {
+  --ink: #1d1d1b;
+  --muted: #4a4a46; /* 8:1 on white */
+  --paper: #ffffff;
+  --tint: #f3f4f1;
+  --line: #c9ccc4;
+  --link: #0b4f8a; /* 8.7:1 on white */
+  --focus: #b35c00;
+  --alert-bg: #fbe3e1;
+  --alert-ink: #7a1410;
+  --warn-bg: #fdf0c8;
+  --warn-ink: #5c4400;
+  --good-bg: #dcf0e0;
+  --good-ink: #1d5a2b;
+  --radius: 6px;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* The hidden attribute must always hide, even on table rows and list items. */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: var(--link);
+  text-underline-offset: 0.15em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Keyboard users need a clear focus ring. */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  padding: 0.5rem 1rem;
+  background: var(--ink);
+  color: #fff;
+  z-index: 10;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+/* --- Header and navigation -------------------------------------------------- */
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--tint);
+}
+
+.site-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.site-title a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.nav-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav-list a {
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.2rem 0.1rem;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-list a[aria-current='page'] {
+  font-weight: 700;
+  border-bottom-color: var(--ink);
+}
+
+/* --- Layout ----------------------------------------------------------------- */
+
+main {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin: 0.5rem 0 0.75rem;
+}
+
+h2 {
+  font-size: 1.4rem;
+  margin: 2rem 0 0.6rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.25rem;
+}
+
+h3 {
+  font-size: 1.1rem;
+  margin: 1.25rem 0 0.4rem;
+}
+
+.lede {
+  font-size: 1.1rem;
+  color: var(--muted);
+  max-width: 45rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.section-note {
+  color: var(--muted);
+  margin-top: -0.25rem;
+}
+
+.card-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  background: var(--paper);
+}
+
+.card h3 {
+  margin-top: 0;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0.2rem 0;
+}
+
+.meta span + span::before {
+  content: ' · ';
+}
+
+/* --- Badges (status is shown as words, not just colour) ---------------------- */
+
+.badge {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid currentColor;
+  vertical-align: middle;
+  margin-left: 0.25rem;
+}
+
+.badge-alert {
+  background: var(--alert-bg);
+  color: var(--alert-ink);
+}
+
+.badge-warn {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+
+.badge-good {
+  background: var(--good-bg);
+  color: var(--good-ink);
+}
+
+.badge-neutral {
+  background: var(--tint);
+  color: var(--ink);
+}
+
+/* --- Tables and filters ----------------------------------------------------- */
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0 1rem;
+}
+
+th,
+td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+}
+
+th {
+  background: var(--tint);
+  font-size: 0.95rem;
+}
+
+/* Row headers are bold by default; keep the descriptions under them regular weight. */
+th[scope='row'] .meta {
+  font-weight: 400;
+}
+
+tr.row-overdue td {
+  background: var(--alert-bg);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: flex-end;
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: var(--tint);
+  border-radius: var(--radius);
+}
+
+.filters label {
+  display: grid;
+  gap: 0.2rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+select,
+input[type='text'],
+input[type='date'] {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #7a7a72;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink);
+  min-width: 10rem;
+}
+
+.filter-count {
+  color: var(--muted);
+  margin: 0.25rem 0;
+}
+
+.empty {
+  padding: 1rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+}
+
+/* --- Misc ------------------------------------------------------------------- */
+
+.callout {
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--link);
+  background: var(--tint);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.photo {
+  width: 7rem;
+  height: 7rem;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.person-head {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.site-footer {
+  border-top: 1px solid var(--line);
+  padding: 1rem 1.25rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+/* Visually hidden, but still read by screen readers. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Pagefind's search box and results are styled by our own CSS. */
+#search-input {
+  width: 100%;
+  font-size: 1.1rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.search-results {
+  list-style: none;
+  padding: 0;
+}
+
+.search-results li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+@media (max-width: 40rem) {
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  .filters label,
+  select,
+  input[type='text'],
+  input[type='date'] {
+    width: 100%;
+    min-width: 0;
+  }
+}
