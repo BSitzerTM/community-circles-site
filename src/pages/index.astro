@@ -9,6 +9,7 @@ import {
   directory,
   formatDate,
   isOverdue,
+  dueKey,
   publicActions,
   publicMeetings,
   today,
@@ -28,7 +29,7 @@ const endingRoles = (await allRoles())
 // Public actions still open after their due date.
 const overdueActions = (await publicActions())
   .filter((a) => isOverdue(a.data, now))
-  .sort((a, b) => a.data.due_date.localeCompare(b.data.due_date));
+  .sort((a, b) => dueKey(a.data.due_date).localeCompare(dueKey(b.data.due_date)));
 
 const latestMeetings = byDate(await publicMeetings()).slice(0, 5);
 ---
@@ -88,7 +89,7 @@ const latestMeetings = byDate(await publicMeetings()).slice(0, 5);
               </h3>
               <p class="meta">
                 <span>Owner: {dir.personName(action.data.owner)}</span>
-                <span>Due {formatDate(action.data.due_date)}</span>
+                <span>{action.data.due_date ? `Due ${formatDate(action.data.due_date)}` : 'No due date'}</span>
                 <span>Status: {action.data.status}</span>
               </p>
             </li>

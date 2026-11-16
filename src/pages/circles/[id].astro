@@ -9,6 +9,7 @@ import {
   formatDate,
   isOpenStatus,
   isOverdue,
+  dueKey,
   publicActions,
   publicDecisions,
   publicMeetings,
@@ -34,7 +35,7 @@ const currentRoles = (await allRoles()).filter((r) => r.data.circle === id && r.
 const recentMeetings = byDate((await publicMeetings()).filter((m) => m.data.circle === id)).slice(0, 5);
 const openActions = (await publicActions())
   .filter((a) => a.data.circle === id && isOpenStatus(a.data.status))
-  .sort((a, b) => a.data.due_date.localeCompare(b.data.due_date));
+  .sort((a, b) => dueKey(a.data.due_date).localeCompare(dueKey(b.data.due_date)));
 const decisions = byDate((await publicDecisions()).filter((d) => d.data.circle === id));
 
 const members = circle.data.members.map((p) => ({ id: p, name: dir.personName(p) }));
@@ -123,7 +124,7 @@ const subCircles = dir.circles.filter((c) => c.data.parent === id);
             </h3>
             <p class="meta">
               <span>Owner: {dir.personName(a.data.owner)}</span>
-              <span>Due {formatDate(a.data.due_date)}</span>
+              <span>{a.data.due_date ? `Due ${formatDate(a.data.due_date)}` : 'No due date'}</span>
               <span>Status: {a.data.status}</span>
             </p>
           </li>

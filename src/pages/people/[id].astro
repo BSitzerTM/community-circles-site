@@ -8,6 +8,7 @@ import {
   directory,
   formatDate,
   isOverdue,
+  dueKey,
   publicActions,
   today,
   url,
@@ -33,7 +34,7 @@ const pastRoles = roles
 // Public actions only.
 const openActions = (await publicActions())
   .filter((a) => a.data.owner === id && (a.data.status === 'open' || a.data.status === 'in progress'))
-  .sort((a, b) => a.data.due_date.localeCompare(b.data.due_date));
+  .sort((a, b) => dueKey(a.data.due_date).localeCompare(dueKey(b.data.due_date)));
 ---
 <Base title={person.data.name}>
   <p class="meta"><a href={url('people/')}>All people</a></p>
@@ -75,7 +76,7 @@ const openActions = (await publicActions())
             </h3>
             <p class="meta">
               <span>{dir.circleName(a.data.circle)}</span>
-              <span>Due {formatDate(a.data.due_date)}</span>
+              <span>{a.data.due_date ? `Due ${formatDate(a.data.due_date)}` : 'No due date'}</span>
               <span>Status: {a.data.status}</span>
             </p>
           </li>

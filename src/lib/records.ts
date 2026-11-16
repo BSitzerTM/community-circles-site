@@ -60,9 +60,13 @@ export function isOpenStatus(status: string): boolean {
 }
 
 /** An action is overdue when it is still open and its due date has passed. */
-export function isOverdue(action: { status: string; due_date: string }, now: string): boolean {
-  return isOpenStatus(action.status) && action.due_date < now;
+export function isOverdue(action: { status: string; due_date?: string | null }, now: string): boolean {
+  // An action with no due date can never be overdue.
+  return isOpenStatus(action.status) && Boolean(action.due_date) && action.due_date! < now;
 }
+
+/** Sort key for due dates. Actions with no due date sort after those that have one. */
+export const dueKey = (due?: string | null) => due ?? '9999-12-31';
 
 // --- Content readers -----------------------------------------------------------
 // The public* readers are the only way pages see members-only items and drafts.

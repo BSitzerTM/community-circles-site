@@ -1,7 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Badge from '../../components/Badge.astro';
-import { daysBetween, directory, formatDate, isOverdue, publicActions, today, url } from '../../lib/records';
+import { daysBetween, directory, dueKey, formatDate, isOverdue, publicActions, today, url } from '../../lib/records';
 
 const now = today();
 const dir = await directory();
@@ -9,7 +9,7 @@ const dir = await directory();
 const actions = (await publicActions()).sort((a, b) => {
   const aOver = isOverdue(a.data, now) ? 0 : 1;
   const bOver = isOverdue(b.data, now) ? 0 : 1;
-  return aOver - bOver || a.data.due_date.localeCompare(b.data.due_date);
+  return aOver - bOver || dueKey(a.data.due_date).localeCompare(dueKey(b.data.due_date));
 });
 
 const people = [...dir.people].sort((a, b) => a.data.name.localeCompare(b.data.name));
@@ -63,7 +63,7 @@ const statuses = ['open', 'in progress', 'done', 'dropped'];
         {
           actions.map((a) => {
             const overdue = isOverdue(a.data, now);
-            const late = daysBetween(a.data.due_date, now);
+            const late = a.data.due_date ? daysBetween(a.data.due_date, now) : 0;
             return (
               <tr
                 data-filter-item
@@ -80,7 +80,7 @@ const statuses = ['open', 'in progress', 'done', 'dropped'];
                 <td>{dir.personName(a.data.owner)}</td>
                 <td>{dir.circleName(a.data.circle)}</td>
                 <td>
-                  {formatDate(a.data.due_date)}
+                  {a.data.due_date ? formatDate(a.data.due_date) : 'No due date'}
                   {overdue ? <Badge tone="alert">Overdue by {late} day{late === 1 ? '' : 's'}</Badge> : null}
                 </td>
                 <td>{a.data.status}</td>

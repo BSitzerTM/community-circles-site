@@ -197,7 +197,7 @@ collections:
         display_fields: [name]
       - { label: Proposal, name: proposal, widget: text }
       - { label: Outcome, name: outcome, widget: text, required: false, hint: "Leave empty while the outcome is still open." }
-      - { label: Review date, name: review_date, widget: datetime, date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD" }
+      - { label: Review date, name: review_date, widget: datetime, date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD", required: false, hint: "Leave empty if no review date has been set." }
       - label: Linked meeting
         name: linked_meeting
         widget: relation
@@ -241,7 +241,7 @@ collections:
         value_field: "{{slug}}"
         display_fields: [name]
       - { label: Created date, name: created_date, widget: datetime, date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD" }
-      - { label: Due date, name: due_date, widget: datetime, date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD" }
+      - { label: Due date, name: due_date, widget: datetime, date_format: "YYYY-MM-DD", time_format: false, format: "YYYY-MM-DD", required: false, hint: "Leave empty if no due date was set. Actions without a due date never become overdue." }
       - label: Status
         name: status
         widget: select

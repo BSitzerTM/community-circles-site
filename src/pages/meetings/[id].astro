@@ -81,7 +81,7 @@ const circleName = dir.circleName(meeting.data.circle);
         <ul>
           {actions.map((a) => (
             <li>
-              {a.data.title}: owner {dir.personName(a.data.owner)}, due {formatDate(a.data.due_date)}, status {a.data.status}
+              {a.data.title}: owner {dir.personName(a.data.owner)}, {a.data.due_date ? `due ${formatDate(a.data.due_date)}` : 'no due date'}, status {a.data.status}
             </li>
           ))}
         </ul>

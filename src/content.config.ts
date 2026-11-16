@@ -124,7 +124,8 @@ const decisions = defineCollection({
     proposal: requiredText('proposal'),
     // Blank while the outcome is still open.
     outcome: optionalText,
-    review_date: dateField('review_date'),
+    // Optional: many decisions have no review date set yet.
+    review_date: dateField('review_date').nullish(),
     linked_meeting: link('meetings').nullish(),
     visibility,
   }),
@@ -138,7 +139,8 @@ const actions = defineCollection({
     owner: link('people'),
     circle: link('circles'),
     created_date: dateField('created_date'),
-    due_date: dateField('due_date'),
+    // Optional: minutes often record an action without a due date.
+    due_date: dateField('due_date').nullish(),
     status: z.enum(['open', 'in progress', 'done', 'dropped'], {
       error: 'status must be one of: open, in progress, done, dropped.',
     }),

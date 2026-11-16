@@ -50,7 +50,8 @@ const alerts = [];
 
 for (const a of actions) {
   const open = a.data.status === 'open' || a.data.status === 'in progress';
-  if (!open || a.data.due_date >= today) continue;
+  // Actions with no due date are never overdue, so they never raise an alert.
+  if (!open || !a.data.due_date || a.data.due_date >= today) continue;
   alerts.push({
     key: `action-overdue-${a.id}`,
     owner: a.data.owner, // only action alerts are emailed, to this person

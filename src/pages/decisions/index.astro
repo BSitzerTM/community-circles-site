@@ -23,9 +23,10 @@ const publicMeetingIds = new Set((await publicMeetings()).map((m) => m.id));
     ) : (
       <ul class="card-list">
         {decisions.map((d) => {
-          const reviewIn = daysBetween(now, d.data.review_date);
-          const reviewSoon = reviewIn >= 0 && d.data.review_date <= soon;
-          const reviewPassed = d.data.review_date < now;
+          const review = d.data.review_date;
+          const reviewIn = review ? daysBetween(now, review) : 0;
+          const reviewSoon = Boolean(review) && reviewIn >= 0 && review! <= soon;
+          const reviewPassed = Boolean(review) && review! < now;
           return (
             <li class={`card${reviewSoon || reviewPassed ? ' card-review' : ''}`} id={d.id}>
               <h2 class="card-title">{d.data.title}</h2>
@@ -37,7 +38,7 @@ const publicMeetingIds = new Set((await publicMeetings()).map((m) => m.id));
               <p><strong>Outcome:</strong> {d.data.outcome || 'Still open'}</p>
               <p class="meta">
                 <span>
-                  Review on {formatDate(d.data.review_date)}
+                  {review ? `Review on ${formatDate(review)}` : 'No review date set'}
                   {reviewPassed ? <Badge tone="alert">Review date passed</Badge> : null}
                   {reviewSoon && !reviewPassed ? <Badge tone="warn">Review due in {reviewIn} days</Badge> : null}
                 </span>

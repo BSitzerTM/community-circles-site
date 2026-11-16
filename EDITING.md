@@ -65,7 +65,7 @@ The meeting now appears on the **Meetings** page. Published meetings also appear
    - **Title**: a short description, such as "Book the community hall".
    - **Owner**: the person who will do it.
    - **Circle**: the circle it belongs to.
-   - **Created date** and **Due date**.
+   - **Created date** and **Due date**. The due date is optional. Leave it empty if none was set, and the action will never be marked overdue.
    - **Status**: usually **Open**.
    - **Linked meeting**: the meeting where it was agreed, if there was one.
 3. Click **Publish**.
