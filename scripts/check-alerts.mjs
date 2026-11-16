@@ -15,6 +15,7 @@
  * GITHUB_REPOSITORY (set automatically by GitHub Actions). Without a token,
  * the script just prints the alerts it would raise.
  */
+import nodemailer from 'nodemailer';
 import { loadCollection } from './lib/records.mjs';
 
 const LABEL = 'site-alert';
@@ -23,6 +24,11 @@ const repo = process.env.GITHUB_REPOSITORY ?? 'BSITZERTM/community-circles-site'
 const [owner] = repo.split('/');
 const repoName = repo.split('/')[1];
 const siteUrl = `https://${owner.toLowerCase()}.github.io/${repoName}/`;
+
+// Email settings. Owners' addresses are kept in the OWNER_EMAILS secret, never
+// in the repo, because the repo is public. The log never prints an address.
+const ownerEmails = JSON.parse(process.env.OWNER_EMAILS || '{}');
+const emailConfigured = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD);
 
 // Today's date in South African time, as YYYY-MM-DD.
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg' }).format(new Date());
@@ -47,6 +53,7 @@ for (const a of actions) {
   if (!open || a.data.due_date >= today) continue;
   alerts.push({
     key: `action-overdue-${a.id}`,
+    owner: a.data.owner, // only action alerts are emailed, to this person
     title: `Overdue action: ${a.data.title}`,
     body: [
       `The action **${a.data.title}** was due on ${a.data.due_date} and is still ${a.data.status}.`,
@@ -83,7 +90,10 @@ for (const r of roles) {
 console.log(`${alerts.length} alert(s) apply today (${today}).`);
 
 if (!token) {
-  for (const alert of alerts) console.log(`- ${alert.title}`);
+  for (const alert of alerts) {
+    console.log(`- ${alert.title}`);
+    if (alert.owner) console.log(`  would email the owner (${alert.owner}) if they have an address`);
+  }
   console.log('No GITHUB_TOKEN set, so no issues were created or closed.');
   process.exit(0);
 }
@@ -106,6 +116,48 @@ async function github(method, endpoint, body) {
     throw new Error(`GitHub API ${method} ${endpoint} failed: ${response.status} ${text}`);
   }
   return response.status === 204 ? null : response.json();
+}
+
+/**
+ * Emails an action's owner about a new overdue-action issue.
+ * A failed email is logged but does not stop the job, and the issue still exists.
+ */
+async function emailOwner(alert, issueUrl) {
+  const to = ownerEmails[alert.owner];
+  if (!to) {
+    console.log(`No email address stored for ${alert.owner}, so no email was sent for: ${alert.title}`);
+    return;
+  }
+  if (!emailConfigured) {
+    console.log(`Email is not configured (SMTP secrets are missing), so no email was sent for: ${alert.title}`);
+    return;
+  }
+  const port = Number(process.env.SMTP_PORT || 587);
+  const transport = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port,
+    secure: port === 465,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
+  });
+  try {
+    await transport.sendMail({
+      from: process.env.ALERT_FROM || process.env.SMTP_USER,
+      to,
+      subject: alert.title,
+      text: [
+        `Hello,`,
+        ``,
+        alert.body.replace(/\*\*/g, ''),
+        ``,
+        `Issue with the details: ${issueUrl}`,
+        ``,
+        `You are receiving this because you own this action on the CCME site.`,
+      ].join('\n'),
+    });
+    console.log(`Emailed the owner (${alert.owner}) about: ${alert.title}`);
+  } catch (error) {
+    console.warn(`Could not email the owner (${alert.owner}): ${error.message}`);
+  }
 }
 
 // Make sure the label exists. If it already does, GitHub returns an error, which is fine to ignore.
@@ -132,12 +184,14 @@ const wantedKeys = new Set(alerts.map((a) => a.key));
 let created = 0;
 for (const alert of alerts) {
   if (existingByKey.has(alert.key)) continue;
-  await github('POST', '/issues', {
+  const issue = await github('POST', '/issues', {
     title: alert.title,
     body: `${alert.body}\n\n<!-- alert-key: ${alert.key} -->`,
     labels: [LABEL],
   });
   created += 1;
+  // Email only when the issue is new, so each alert is emailed once.
+  if (alert.owner) await emailOwner(alert, issue.html_url);
 }
 
 // Close open issues whose alert no longer applies.

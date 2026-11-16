@@ -79,3 +79,10 @@ jobs:
       - run: node scripts/check-alerts.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Email settings (optional). If these are missing, the alerts still open issues, but no emails are sent.
+          OWNER_EMAILS: ${{ secrets.OWNER_EMAILS }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM }}

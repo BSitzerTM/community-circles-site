@@ -185,6 +185,21 @@ The alert script opens one GitHub issue for:
 
 It does not open a second issue for an alert that already has one, even a closed one, and it closes issues whose alert no longer applies. Members-only actions do not get issues, because issues on a public repository are visible to everyone.
 
+### Email alerts to action owners
+
+When an overdue-action issue is first created, its owner is also emailed. Role alerts are not emailed. Nothing is emailed until these repository secrets are set (**Settings → Secrets and variables → Actions → New repository secret**):
+
+| Secret | What to put in it |
+|---|---|
+| `OWNER_EMAILS` | A JSON map from person id to email, e.g. `{"brad":"brad@grace2learn.co.za"}`. The person id is the file name in `src/content/people/`. |
+| `SMTP_HOST` | The outgoing mail server for the sending mailbox. |
+| `SMTP_PORT` | Usually `587` (or `465` for SSL). |
+| `SMTP_USER` | The sending mailbox's login. |
+| `SMTP_PASSWORD` | The mailbox password, or an app password if the provider requires one. |
+| `ALERT_FROM` | Optional. The "from" address. Defaults to `SMTP_USER`. |
+
+Addresses are kept in secrets, not in the content files, because the repo is public. Do not add email addresses to the people records.
+
 To run the alerts by hand: **Actions → Build, deploy and checks → Run workflow**.
 
 ---
