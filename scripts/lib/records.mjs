@@ -24,7 +24,9 @@ function normaliseDates(data) {
 /** Loads every record in one collection, e.g. loadCollection('actions'). */
 export async function loadCollection(name) {
   const dir = path.join(CONTENT_DIR, name);
-  const files = (await readdir(dir)).filter((f) => /\.(yml|md)$/.test(f));
+  // A collection with no folder yet simply has no records.
+  const names = await readdir(dir).catch((error) => (error.code === 'ENOENT' ? [] : Promise.reject(error)));
+  const files = names.filter((f) => /\.(yml|md)$/.test(f));
   const records = [];
   for (const file of files) {
     const raw = await readFile(path.join(dir, file), 'utf8');

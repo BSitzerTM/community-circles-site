@@ -1,6 +1,6 @@
-# Community Circles site
+# CCME: Connected Community Marine Estate, public record site
 
-This is the public record for a small group that works by sociocracy. It shows:
+This is the public record for the Connected Community Marine Estate (CCME), a Muizenberg network of neighbours that works by sociocracy. It shows:
 
 - the **circles** and what each one is for
 - **who holds which role**, and when each term ends (ended roles stay on the site, so you can see the history)
@@ -128,7 +128,7 @@ You need a free [Cloudflare](https://www.cloudflare.com) account (the free plan 
 
 1. On GitHub, go to **Settings → Developer settings → OAuth Apps → New OAuth App**. (Use the account that owns the repository.)
 2. Fill in:
-   - **Application name:** Community Circles editor
+   - **Application name:** CCME site editor
    - **Homepage URL:** `https://bsitzertm.github.io/community-circles-site/`
    - **Authorization callback URL:** `https://YOUR-PROXY-ADDRESS/callback`. Leave a placeholder for now; you will update it in step 5c.
 3. Click **Register application**.

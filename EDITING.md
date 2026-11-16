@@ -1,4 +1,4 @@
-# Editing the Community Circles site
+# Editing the CCME site
 
 This guide is for editors. You do not need to know how to code. You fill in forms, and the site updates itself.
 

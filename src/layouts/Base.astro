@@ -11,7 +11,7 @@ interface Props {
   description?: string;
 }
 
-const { title, description = 'The public record of circles, roles, meetings, decisions and actions.' } =
+const { title, description = 'The public record of the circles, roles, meetings, decisions and actions of the Connected Community Marine Estate, Muizenberg.' } =
   Astro.props;
 
 // Each entry is [path under the site, label]. The home page has path ''.
@@ -39,7 +39,7 @@ const isCurrent = (path: string) => {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title} | Community Circles</title>
+    <title>{title} | CCME</title>
     <meta name="description" content={description} />
     <!-- An empty inline icon stops browsers asking for /favicon.ico, which this site does not have. -->
     <link rel="icon" href="data:," />
@@ -48,7 +48,7 @@ const isCurrent = (path: string) => {
     <a class="skip-link" href="#main">Skip to main content</a>
 
     <header class="site-header">
-      <p class="site-title"><a href={url()}>Community Circles</a></p>
+      <p class="site-title"><a href={url()}>CCME: Connected Community Marine Estate</a></p>
       <nav aria-label="Main">
         <ul class="nav-list">
           {

@@ -81,7 +81,7 @@ export const allCircles = () => getCollection('circles');
 export const allRoles = () => getCollection('roles');
 
 /**
- * Looks up names from ids, so pages can show "Thandi Mokoena" instead of
+ * Looks up names from ids, so pages can show "Jane Doe" instead of
  * "thandi-mokoena". Also returns the full people and circles lists.
  */
 export async function directory() {
