@@ -30,6 +30,46 @@ const siteUrl = `https://${owner.toLowerCase()}.github.io/${repoName}/`;
 const ownerEmails = JSON.parse(process.env.OWNER_EMAILS || '{}');
 const emailConfigured = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD);
 
+/** Builds the mail transport from the SMTP secrets. */
+function mailTransport() {
+  const port = Number(process.env.SMTP_PORT || 587);
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port,
+    secure: port === 465,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
+  });
+}
+
+// TEST MODE: when the workflow is started by hand with "test email" ticked,
+// send one test email to each stored owner address and stop. No issues are touched.
+if (process.env.SEND_TEST_EMAIL === 'true') {
+  if (!emailConfigured) {
+    console.error('Test email not sent: the SMTP secrets are missing.');
+    process.exit(1);
+  }
+  const recipients = Object.entries(ownerEmails);
+  if (recipients.length === 0) {
+    console.error('Test email not sent: OWNER_EMAILS is empty.');
+    process.exit(1);
+  }
+  for (const [ownerId] of recipients) {
+    try {
+      await mailTransport().sendMail({
+        from: process.env.ALERT_FROM || process.env.SMTP_USER,
+        to: ownerEmails[ownerId],
+        subject: 'Test: CCME site email alerts',
+        text: 'This is a test of the CCME site email alerts. If you can read this, email alerts are working.',
+      });
+      console.log(`Test email sent to the owner (${ownerId}).`);
+    } catch (error) {
+      console.error(`Test email failed for the owner (${ownerId}): ${error.message}`);
+      process.exitCode = 1;
+    }
+  }
+  process.exit(process.exitCode ?? 0);
+}
+
 // Today's date in South African time, as YYYY-MM-DD.
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg' }).format(new Date());
 const inThirtyDays = (() => {

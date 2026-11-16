@@ -12,6 +12,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      test_email:
+        description: 'Only send a test email to the action owners (no alerts or issues)'
+        type: boolean
+        default: false
   schedule:
     - cron: '15 3 * * *'
 
@@ -80,6 +85,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Email settings (optional). If these are missing, the alerts still open issues, but no emails are sent.
+          SEND_TEST_EMAIL: ${{ inputs.test_email }}
           OWNER_EMAILS: ${{ secrets.OWNER_EMAILS }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
