@@ -107,14 +107,13 @@ The workflow uses GitHub's built-in token. In most repositories this already wor
 
 Issues are on by default for public repositories. Check that **Settings → General → Features → Issues** is ticked.
 
-### 5. Remove the sample content
+### 5. Replace the sample people and roles
 
-The repository comes with sample records (two circles, three people, four roles, two meetings, two decisions and five actions) so the site works on the first build. Before you go live:
+The repository has the CCME's circles, plus sample people, roles, meetings, decisions and actions so you can see how the site and alerts work. The sample records are all under the Connectors Circle.
 
-1. Delete the sample files from `src/content/` (or edit them in the editor).
-2. Add your real people, circles and roles.
+The sample deliberately raises three alerts on the first scheduled run: the overdue action "Publish October minutes", and the roles "Facilitator" and "Events Lead", whose terms end within 30 days. Those issues are public on this repo. Close them, or delete or edit the sample records, before you rely on the site.
 
-Note: the sample actions and roles are dated in 2026. The first daily run will open alert issues for the sample overdue action, and for the sample role whose term ends soon. Close those issues once you have cleared the sample content.
+To replace the sample, delete or edit the files in `src/content/people`, `roles`, `meetings`, `decisions` and `actions`, or use the editor in `/admin`.
 
 ---
 
