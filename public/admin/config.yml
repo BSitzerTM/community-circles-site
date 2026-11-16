@@ -4,16 +4,16 @@
 # which forms to show. Editors fill in forms; Decap saves each record as a
 # file in src/content/ and commits it to the main branch.
 #
-# Before the GitHub login works you must:
-#   1. Deploy the free OAuth proxy (see the README, "Setting up editor login").
-#   2. Replace the base_url below with the proxy's address.
+# Editors log in with GitHub through a small OAuth proxy on Cloudflare
+# Workers (see the README, "Setting up editor login"). If the proxy moves,
+# update base_url below.
 
 backend:
   name: github
-  repo: BSITZERTM/community-circles-site
+  repo: BSitzerTM/community-circles-site
   branch: main
-  # Address of the OAuth proxy you deployed. Replace this placeholder.
-  base_url: https://YOUR-OAUTH-PROXY.example.workers.dev
+  # Address of the OAuth proxy (Cloudflare Worker "ccme-decap-proxy").
+  base_url: https://ccme-decap-proxy.brad-95f.workers.dev
   auth_endpoint: auth
 
 # Uploaded photos are saved here and are published as part of the site.
