@@ -146,7 +146,9 @@ You can also use the Cloudflare Worker template from the [Decap backends overvie
 
 ### 5c. Connect the proxy to the site
 
-1. Set the callback URL in the GitHub OAuth App to `https://YOUR-PROXY-ADDRESS/callback`.
+1. Set the callback URL in the GitHub OAuth App to `https://YOUR-PROXY-ADDRESS/callback`. Then click **Add URI** under **Redirect URIs** and add a second entry: `https://YOUR-PROXY-ADDRESS/callback?provider=github`. Keep both.
+
+   The second entry is needed. The proxy adds `?provider=github` to the redirect, and GitHub only accepts a redirect that matches a registered URI exactly. Without it, you get the error "The redirect_uri is not associated with this application".
 2. Open [public/admin/config.yml](public/admin/config.yml). Replace `https://YOUR-OAUTH-PROXY.example.workers.dev` under `backend:` with your proxy's address. Do not add `/auth` to it; the config already has `auth_endpoint: auth`.
 3. Commit and push. The site rebuilds.
 4. Open `https://bsitzertm.github.io/community-circles-site/admin/` and click **Login with GitHub**.
