@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marine Estate service requests · Ward 45</title>
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<main>
+<h1>Marine Estate service requests</h1>
+<p class="lede">City service requests logged inside the Marine Estate, Muizenberg, since January 2023. Shows where requests cluster, which faults recur, and how long completed requests took. Data runs to 11 November 2026.</p>
+
+<div class="note"><strong>Read this first.</strong> The City's data has no status field, so a missing completion date does <em>not</em> mean a call is still open; spot checks found most of them were closed on the City's tracking site. The estate boundary is hand-drawn and approximate, and requests within 40 m of it are included because the City places some requests on the nearest street or erf. Medians are based on the dates logged, not on site work or service standards.</div>
+
+<div class="grid g4" id="stats" style="margin-top:16px"></div>
+
+<div class="toolbar" style="margin-top:14px">
+  <label><input type="checkbox" data-l="rec" checked> Recurring hotspots, all time (3+ same type)</label>
+  <label><input type="checkbox" data-l="rec6"> Recurring hotspots, last 6 months</label>
+  <label><input type="checkbox" data-l="recent"> Last 3 months (green completed, grey missing date)</label>
+  <label><input type="checkbox" data-l="missing"> Completion date missing (all ages)</label>
+  <label><input type="checkbox" id="c-poly" checked> Estate boundary</label>
+</div>
+<div id="map" class="map tall"></div>
+
+<h2>Most-repeated faults in the estate</h2>
+<p class="lede">Groups of three or more requests of the same type within about 35 m of each other, all time. Circle sizes on the map follow these counts.</p>
+<div class="card" style="overflow:auto"><div id="top"></div></div>
+
+<h2>How long completed requests took</h2>
+<p class="lede">Median days from the logged date to the completed date, for complaint types with at least five completed requests. Only requests that have a completion date are counted.</p>
+<div class="card" style="overflow:auto"><div id="turn"></div></div>
+</main>
+
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="data/bounds.js"></script>
+<script src="data/marine.js"></script>
+<script src="assets/common.js"></script>
+<script>
+buildHeader('marine-estate-requests.html');
+const C=D.marine.counts;
+document.getElementById('stats').innerHTML=
+  statCard(fmt(C.requests),'requests inside the estate since 2023',fmt(C.physical)+' are physical faults and requests')+
+  statCard(fmt(C.completed),'with a completed date','of '+fmt(C.physical)+' physical requests')+
+  statCard(fmt(C.missing),'completion date missing','not the same as open; usually closed')+
+  statCard(fmt(C.hotspots),'recurring hotspots, all time',C.hotspots6+' in the last 6 months');
+const map=L.map('map',{preferCanvas:true});
+const street=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Basemap &copy; Esri, HERE, Garmin, OpenStreetMap contributors'});
+const imagery=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Imagery &copy; Esri'});
+street.addTo(map);
+L.control.layers({'Street map':street,'Satellite':imagery},{},{collapsed:true}).addTo(map);
+const poly=L.polygon(D.marine.POLY,{color:'#35342f',weight:2,fill:false,dashArray:'6 4'}).addTo(map);
+map.fitBounds(poly.getBounds().pad(.15));
+const layers={rec:L.layerGroup().addTo(map),rec6:L.layerGroup(),recent:L.layerGroup(),missing:L.layerGroup()};
+const addRec=(list,layer,col)=>list.forEach(c=>L.circle([c.lat,c.lon],{radius:14+c.n*4,color:col,weight:2,fillColor:col,fillOpacity:.3})
+  .bindPopup('<b>'+esc(c.type)+'</b><br>'+c.n+' requests over '+c.months+' months<br>'+c.first+' to '+c.last+'<br>Median days to completed date: '+(c.median_days_to_complete===''||c.median_days_to_complete==null?'n/a':c.median_days_to_complete)).addTo(layer));
+addRec(D.marine.REC,layers.rec,'#7c3aed');
+addRec(D.marine.REC6,layers.rec6,'#0891b2');
+D.marine.RECENT.forEach(o=>L.circleMarker([o.lat,o.lon],{radius:6,color:'#222',weight:1,fillColor:o.done?'#2e8b57':'#9ca3af',fillOpacity:.9})
+  .bindPopup('<b>'+esc(o.t)+'</b><br>Logged '+o.c+'<br>'+(o.done?'Completed '+o.done+' ('+o.d+' days)':'Completion date missing (usually closed; check the City site)')).addTo(layers.recent));
+const seen={};
+D.marine.MISSING.forEach(o=>{const k=o.lat.toFixed(5)+o.lon.toFixed(5);const n=seen[k]=(seen[k]||0)+1;const j=(n-1)*0.00004;
+  L.circleMarker([o.lat+j,o.lon+j],{radius:5,color:'#555',weight:1,fillColor:'#e5e7eb',fillOpacity:.85})
+   .bindPopup('<b>'+esc(o.t)+'</b><br>Logged '+o.c+' ('+o.age+' days ago)<br>Last City update '+o.m+'<br><i>Completion date missing; usually closed on the City site</i>').addTo(layers.missing);});
+document.querySelectorAll('[data-l]').forEach(c=>c.addEventListener('change',()=>{const g=layers[c.dataset.l];c.checked?g.addTo(map):map.removeLayer(g);}));
+document.getElementById('c-poly').addEventListener('change',e=>e.target.checked?poly.addTo(map):map.removeLayer(poly));
+addLegend(map,'<span style="color:#7c3aed">&#9679;</span> Recurring, all time<br><span style="color:#0891b2">&#9679;</span> Recurring, last 6 months<br><span style="color:#2e8b57">&#9679;</span> Last 3 months, completed<br><span style="color:#9ca3af">&#9679;</span> Last 3 months, date missing<br><span style="color:#999">&#9679;</span> Date missing, any age<br><span style="color:#35342f">- - -</span> Estate boundary (approximate)');
+document.getElementById('top').innerHTML='<table class="t"><tr><th>Complaint type</th><th class="num">Requests</th><th>Period</th><th class="num">Median days</th><th>Example location</th></tr>'+
+  D.marine.TOP.map(c=>'<tr><td>'+esc(c.type)+'</td><td class="num">'+c.n+'</td><td>'+esc(c.first)+' to '+esc(c.last)+'</td><td class="num">'+(c.median_days_to_complete===''||c.median_days_to_complete==null?'n/a':c.median_days_to_complete)+'</td><td>'+c.lat.toFixed(4)+', '+c.lon.toFixed(4)+'</td></tr>').join('')+'</table>';
+document.getElementById('turn').innerHTML='<table class="t"><tr><th>Complaint type</th><th>Theme</th><th class="num">Completed requests</th><th class="num">Median days</th><th class="num">Closed within 7 days</th></tr>'+
+  D.marine.TURN.map(t=>'<tr><td>'+esc(t.type)+'</td><td>'+esc(t.theme)+'</td><td class="num">'+t.n+'</td><td class="num">'+t.median+'</td><td class="num">'+t.pct7+'%</td></tr>').join('')+'</table>';
+buildFooter('Source: City of Cape Town service requests layer (spatial), to 11 November 2026. Analysis from the Marine Estate service-request report.');
+</script>
+</body></html>

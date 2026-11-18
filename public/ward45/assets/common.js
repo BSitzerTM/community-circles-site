@@ -11,7 +11,7 @@
 if(window.Chart){Chart.defaults.animation=false;}
 /* Shared helpers for every page. Data files set window globals; no fetch() so file:// works. */
 const PAGES = [
-  ['index.html','Overview'],['people.html','People'],['business.html','Informal trade'],
+  ['index.html','Overview'],['people.html','People'],['marine-estate-requests.html','Marine Estate requests'],['business.html','Informal trade'],
   ['council.html','Subcouncil 19'],['fire.html','Fire'],['waste.html','Refuse'],
   ['community.html','Community'],['traffic.html','Traffic'],['service-requests.html','Service requests'],
   ['air.html','Air'],['water.html','Water & land'],['sources.html','Sources']
