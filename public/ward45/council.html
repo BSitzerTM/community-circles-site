@@ -37,9 +37,9 @@
 </div>
 <div class="note info" style="margin-top:14px"><strong>Zoning applications</strong> and the zoning layer itself are published by the City, but individual applications are not in the portal. The zoning polygons (7,521 touch Ward 45) are too many to map usefully here; split-zoned parcels (113 touch Ward 45) are in the data catalogue.</div>
 
-<h2>Municipal arrears, Subcouncil 19</h2>
+<h2>Municipal arrears, Subcouncil 19 (last 12 months)</h2>
 <div class="grid g2">
-  <div class="card"><h3>Total arrears over time</h3><div class="chart-box"><canvas id="ch-ar"></canvas></div><p style="font-size:12px;color:#5d6b70" id="ar-note"></p></div>
+  <div class="card"><h3>Total arrears, last 12 months</h3><div class="chart-box"><canvas id="ch-ar"></canvas></div><p style="font-size:12px;color:#5d6b70" id="ar-note"></p></div>
   <div class="card"><h3>How old the debt is (latest month)</h3><div class="chart-box"><canvas id="ch-age"></canvas></div></div>
 </div>
 
@@ -107,7 +107,7 @@ addLegend(map,'<b>Growth areas</b><br><i class="sq" style="background:#4daf4a"><
 build();
 
 // ---- arrears ----
-const A=D.people.arrearsSeries.slice();
+const A=D.people.arrearsSeries.filter(a=>a[0]>='2025-11-01').slice();
 const med=A.map(a=>a[1]).sort((x,y)=>x-y)[Math.floor(A.length/2)];
 const clean=A.filter(a=>a[1]>0.3*med);
 document.getElementById('ar-note').textContent=(A.length-clean.length)?(A.length-clean.length)+' month with an implausibly low value (a data error in the source) is left out.':'';

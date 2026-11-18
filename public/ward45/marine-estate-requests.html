@@ -6,67 +6,76 @@
 </head><body>
 <main>
 <h1>Marine Estate service requests</h1>
-<p class="lede">City service requests logged inside the Marine Estate, Muizenberg, since January 2023. Shows where requests cluster, which faults recur, and how long completed requests took. Data runs to 11 November 2026.</p>
+<p class="lede">City service requests logged inside the Marine Estate, Muizenberg, in the last 12 months (<span id="win"></span>). Shows where completion dates are missing, where requests cluster, which faults recur, and how long completed requests took.</p>
 
-<div class="note"><strong>Read this first.</strong> The City's data has no status field, so a missing completion date does <em>not</em> mean a call is still open; spot checks found most of them were closed on the City's tracking site. The estate boundary is hand-drawn and approximate, and requests within 40 m of it are included because the City places some requests on the nearest street or erf. Medians are based on the dates logged, not on site work or service standards.</div>
-
+<h2>Completion dates are missing</h2>
+<div class="note" id="admin-call"></div>
 <div class="grid g4" id="stats" style="margin-top:16px"></div>
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><h3>How long ago the requests were logged</h3><div id="bands"></div></div>
+  <div class="card"><h3>Missing completion dates, by type</h3><div id="bytype" style="max-height:340px;overflow:auto"></div></div>
+</div>
+<div class="card" style="margin-top:16px"><h3>Oldest requests with no completion date</h3><p class="lede" style="margin:0 0 8px">Check these first. Reference numbers are the City's notification numbers.</p><div id="oldest" style="overflow:auto"></div></div>
 
-<div class="toolbar" style="margin-top:14px">
-  <label><input type="checkbox" data-l="rec" checked> Recurring hotspots, all time (3+ same type)</label>
-  <label><input type="checkbox" data-l="rec6"> Recurring hotspots, last 6 months</label>
-  <label><input type="checkbox" data-l="recent"> Last 3 months (green completed, grey missing date)</label>
-  <label><input type="checkbox" data-l="missing"> Completion date missing (all ages)</label>
+<h2>Map</h2>
+<div class="toolbar">
+  <label><input type="checkbox" data-l="rec" checked> Recurring hotspots (3+ same type within about 35 m)</label>
+  <label><input type="checkbox" data-l="done"> Completed requests</label>
+  <label><input type="checkbox" data-l="missing" checked> No completion date</label>
   <label><input type="checkbox" id="c-poly" checked> Estate boundary</label>
 </div>
 <div id="map" class="map tall"></div>
+<div class="note info" style="margin-top:10px">The estate boundary is hand-drawn and approximate. Requests within 40 m of it are included, because the City places some requests on the nearest street or erf. Administrative and account requests are left out.</div>
 
 <h2>Most-repeated faults in the estate</h2>
-<p class="lede">Groups of three or more requests of the same type within about 35 m of each other, all time. Circle sizes on the map follow these counts.</p>
 <div class="card" style="overflow:auto"><div id="top"></div></div>
 
 <h2>How long completed requests took</h2>
-<p class="lede">Median days from the logged date to the completed date, for complaint types with at least five completed requests. Only requests that have a completion date are counted.</p>
+<p class="lede">Median days from the logged date to the completed date, for types with at least five completed requests in the last 12 months. Only requests with a completion date are counted, so figures are understated where many dates are missing.</p>
 <div class="card" style="overflow:auto"><div id="turn"></div></div>
 </main>
 
 <script src="assets/vendor/leaflet/leaflet.js"></script>
 <script src="data/bounds.js"></script>
-<script src="data/marine.js"></script>
+<script src="data/marine12.js"></script>
 <script src="assets/common.js"></script>
 <script>
 buildHeader('marine-estate-requests.html');
-const C=D.marine.counts;
+const M=D.m12,C=M.counts;
+document.getElementById('win').textContent='from '+M.window[0]+' to '+M.window[1];
+document.getElementById('admin-call').innerHTML='<strong>Admin action needed: add completion dates.</strong> '+
+  fmt(C.missing)+' of the '+fmt(C.physical)+' physical requests logged in the last 12 months have no completion date, and '+
+  fmt(M.missingBands[2][1]+M.missingBands[3][1])+' of them were logged more than 90 days ago. When a request is closed, its completion date should be entered in the City\'s system. Without it, the request cannot be measured, and it is not clear whether the work was done.';
 document.getElementById('stats').innerHTML=
-  statCard(fmt(C.requests),'requests inside the estate since 2023',fmt(C.physical)+' are physical faults and requests')+
-  statCard(fmt(C.completed),'with a completed date','of '+fmt(C.physical)+' physical requests')+
-  statCard(fmt(C.missing),'completion date missing','not the same as open; usually closed')+
-  statCard(fmt(C.hotspots),'recurring hotspots, all time',C.hotspots6+' in the last 6 months');
+  statCard(fmt(C.physical),'physical requests in the last 12 months','excluding '+fmt(C.admin)+' account and admin requests')+
+  statCard(fmt(C.completed),'with a completion date','used for the turnaround figures')+
+  statCard(fmt(C.missing),'with no completion date','needs an admin to add one')+
+  statCard(Math.round(100*C.missing/C.physical)+'%','of physical requests missing a date','');
+document.getElementById('bands').innerHTML='<table class="t"><tr><th>Logged</th><th class="num">Missing completion date</th></tr>'+M.missingBands.map(b=>'<tr><td>'+esc(b[0])+'</td><td class="num">'+b[1]+'</td></tr>').join('')+'</table>';
+document.getElementById('bytype').innerHTML='<table class="t"><tr><th>Complaint type</th><th class="num">Missing</th></tr>'+M.missingByType.map(t=>'<tr><td>'+esc(t[0])+'</td><td class="num">'+t[1]+'</td></tr>').join('')+'</table>';
+document.getElementById('oldest').innerHTML='<table class="t"><tr><th>Logged</th><th class="num">Days since logged</th><th>Complaint type</th><th>Reference</th></tr>'+M.oldestMissing.map(o=>'<tr><td>'+esc(o.c)+'</td><td class="num">'+o.age+'</td><td>'+esc(o.t)+'</td><td>'+esc(o.id)+'</td></tr>').join('')+'</table>';
 const map=L.map('map',{preferCanvas:true});
 const street=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Basemap &copy; Esri, HERE, Garmin, OpenStreetMap contributors'});
 const imagery=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Imagery &copy; Esri'});
 street.addTo(map);
 L.control.layers({'Street map':street,'Satellite':imagery},{},{collapsed:true}).addTo(map);
-const poly=L.polygon(D.marine.POLY,{color:'#35342f',weight:2,fill:false,dashArray:'6 4'}).addTo(map);
+const poly=L.polygon(M.POLY,{color:'#35342f',weight:2,fill:false,dashArray:'6 4'}).addTo(map);
 map.fitBounds(poly.getBounds().pad(.15));
-const layers={rec:L.layerGroup().addTo(map),rec6:L.layerGroup(),recent:L.layerGroup(),missing:L.layerGroup()};
-const addRec=(list,layer,col)=>list.forEach(c=>L.circle([c.lat,c.lon],{radius:14+c.n*4,color:col,weight:2,fillColor:col,fillOpacity:.3})
-  .bindPopup('<b>'+esc(c.type)+'</b><br>'+c.n+' requests over '+c.months+' months<br>'+c.first+' to '+c.last+'<br>Median days to completed date: '+(c.median_days_to_complete===''||c.median_days_to_complete==null?'n/a':c.median_days_to_complete)).addTo(layer));
-addRec(D.marine.REC,layers.rec,'#7c3aed');
-addRec(D.marine.REC6,layers.rec6,'#0891b2');
-D.marine.RECENT.forEach(o=>L.circleMarker([o.lat,o.lon],{radius:6,color:'#222',weight:1,fillColor:o.done?'#2e8b57':'#9ca3af',fillOpacity:.9})
-  .bindPopup('<b>'+esc(o.t)+'</b><br>Logged '+o.c+'<br>'+(o.done?'Completed '+o.done+' ('+o.d+' days)':'Completion date missing (usually closed; check the City site)')).addTo(layers.recent));
+const layers={rec:L.layerGroup().addTo(map),done:L.layerGroup(),missing:L.layerGroup().addTo(map)};
+M.hotspots.slice(0,60).forEach(c=>L.circle([c.lat,c.lon],{radius:14+c.n*4,color:'#7c3aed',weight:2,fillColor:'#7c3aed',fillOpacity:.3})
+  .bindPopup('<b>'+esc(c.type)+'</b><br>'+c.n+' requests, '+c.first+' to '+c.last+'<br>No completion date: '+c.missing+'<br>Median days (completed): '+(c.median==null?'n/a':c.median)).addTo(layers.rec));
 const seen={};
-D.marine.MISSING.forEach(o=>{const k=o.lat.toFixed(5)+o.lon.toFixed(5);const n=seen[k]=(seen[k]||0)+1;const j=(n-1)*0.00004;
-  L.circleMarker([o.lat+j,o.lon+j],{radius:5,color:'#555',weight:1,fillColor:'#e5e7eb',fillOpacity:.85})
-   .bindPopup('<b>'+esc(o.t)+'</b><br>Logged '+o.c+' ('+o.age+' days ago)<br>Last City update '+o.m+'<br><i>Completion date missing; usually closed on the City site</i>').addTo(layers.missing);});
+M.points.forEach(p=>{const k=p.lat.toFixed(5)+p.lon.toFixed(5);const n=seen[k]=(seen[k]||0)+1;const j=(n-1)*0.00004;
+  const isDone=!!p.done;
+  L.circleMarker([p.lat+j,p.lon+j],{radius:isDone?4:6,color:'#222',weight:1,fillColor:isDone?'#2e8b57':'#c0392b',fillOpacity:.8})
+   .bindPopup('<b>'+esc(p.t)+'</b><br>Ref '+esc(p.id)+'<br>Logged '+esc(p.c)+'<br>'+(isDone?'Completed '+esc(p.done)+' ('+p.d+' days)':'<strong>No completion date. Admin to add one.</strong>')).addTo(isDone?layers.done:layers.missing);});
 document.querySelectorAll('[data-l]').forEach(c=>c.addEventListener('change',()=>{const g=layers[c.dataset.l];c.checked?g.addTo(map):map.removeLayer(g);}));
 document.getElementById('c-poly').addEventListener('change',e=>e.target.checked?poly.addTo(map):map.removeLayer(poly));
-addLegend(map,'<span style="color:#7c3aed">&#9679;</span> Recurring, all time<br><span style="color:#0891b2">&#9679;</span> Recurring, last 6 months<br><span style="color:#2e8b57">&#9679;</span> Last 3 months, completed<br><span style="color:#9ca3af">&#9679;</span> Last 3 months, date missing<br><span style="color:#999">&#9679;</span> Date missing, any age<br><span style="color:#35342f">- - -</span> Estate boundary (approximate)');
-document.getElementById('top').innerHTML='<table class="t"><tr><th>Complaint type</th><th class="num">Requests</th><th>Period</th><th class="num">Median days</th><th>Example location</th></tr>'+
-  D.marine.TOP.map(c=>'<tr><td>'+esc(c.type)+'</td><td class="num">'+c.n+'</td><td>'+esc(c.first)+' to '+esc(c.last)+'</td><td class="num">'+(c.median_days_to_complete===''||c.median_days_to_complete==null?'n/a':c.median_days_to_complete)+'</td><td>'+c.lat.toFixed(4)+', '+c.lon.toFixed(4)+'</td></tr>').join('')+'</table>';
+addLegend(map,'<span style="color:#7c3aed">&#9679;</span> Recurring hotspot<br><span style="color:#c0392b">&#9679;</span> No completion date<br><span style="color:#2e8b57">&#9679;</span> Completed<br><span style="color:#35342f">- - -</span> Estate boundary (approx.)');
+document.getElementById('top').innerHTML='<table class="t"><tr><th>Complaint type</th><th class="num">Requests</th><th>First</th><th>Last</th><th class="num">Missing date</th><th class="num">Median days (completed)</th><th>Example location</th></tr>'+
+  M.hotspots.slice(0,20).map(c=>'<tr><td>'+esc(c.type)+'</td><td class="num">'+c.n+'</td><td>'+esc(c.first)+'</td><td>'+esc(c.last)+'</td><td class="num">'+c.missing+'</td><td class="num">'+(c.median==null?'n/a':c.median)+'</td><td>'+c.lat.toFixed(4)+', '+c.lon.toFixed(4)+'</td></tr>').join('')+'</table>';
 document.getElementById('turn').innerHTML='<table class="t"><tr><th>Complaint type</th><th>Theme</th><th class="num">Completed requests</th><th class="num">Median days</th><th class="num">Closed within 7 days</th></tr>'+
-  D.marine.TURN.map(t=>'<tr><td>'+esc(t.type)+'</td><td>'+esc(t.theme)+'</td><td class="num">'+t.n+'</td><td class="num">'+t.median+'</td><td class="num">'+t.pct7+'%</td></tr>').join('')+'</table>';
-buildFooter('Source: City of Cape Town service requests layer (spatial), to 11 November 2026. Analysis from the Marine Estate service-request report.');
+  M.turnaround.map(t=>'<tr><td>'+esc(t.type)+'</td><td>'+esc(t.theme)+'</td><td class="num">'+t.n+'</td><td class="num">'+t.median+'</td><td class="num">'+t.pct7+'%</td></tr>').join('')+'</table>';
+buildFooter('Source: City of Cape Town service requests layer (spatial), last 12 months. Analysis from the Marine Estate service-request report.');
 </script>
 </body></html>

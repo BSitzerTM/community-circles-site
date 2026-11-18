@@ -5,13 +5,13 @@
 <link rel="stylesheet" href="assets/style.css">
 </head><body>
 <main>
-<h1>Service requests in Ward 45</h1>
-<p class="lede">Every City service request (complaint or fault) logged since January 2023 for locations inside Ward 45, from the City's spatial service requests layer. Filter by complaint type and year, and see how long each type takes to close.</p>
-<div class="note"><strong>Scope and limits.</strong> Requests are placed on the map by their recorded coordinates. The City's suburb label is shown where recorded, and about 1,400 requests in the ward have no suburb label. Completion times are the gap between the created and completed dates, so requests still open are left out of those figures.</div>
+<h1>Service requests in Ward 45 (last 12 months)</h1>
+<p class="lede">Every City service request (complaint or fault) logged in the last 12 months (18 November 2025 to 18 November 2026) for locations inside Ward 45, from the City's spatial service requests layer. Filter by complaint type and see how long each type takes to close.</p>
+<div class="note"><strong>Admin action needed: add completion dates.</strong> 3,239 of the 10,209 requests in this period (about one in three) have no completion date. Once a request is closed, its completion date should be entered in the City's system; without it, turnaround cannot be measured.</div>
+<div class="note" style="margin-top:8px"><strong>Scope and limits.</strong> Requests are placed on the map by their recorded coordinates. The City's suburb label is shown where recorded; 1,467 of these requests have no suburb label. Completion times are the gap between the created and completed dates, so requests with no completion date are left out of those figures.</div>
 
 <div class="toolbar" style="margin-top:14px">
   <label>Complaint type <select id="f-cat"></select></label>
-  <label>Year <select id="f-yr"></select></label>
   <label><input type="checkbox" id="f-heat"> Show density (heatmap-style shading)</label>
 </div>
 <div class="grid g4" id="stats"></div>
@@ -19,11 +19,11 @@
 <div id="map" class="map tall" style="margin-top:16px"></div>
 
 <div class="grid g2" style="margin-top:16px">
-  <div class="card"><h3>Requests per year</h3><div class="chart-box"><canvas id="ch-yr"></canvas></div></div>
-  <div class="card"><h3>Most common complaint types (all years)</h3><div class="chart-box" style="height:380px"><canvas id="ch-cat"></canvas></div></div>
+  <div class="card"><h3>Requests per month logged (last 12 months)</h3><div class="chart-box"><canvas id="ch-yr"></canvas></div></div>
+  <div class="card"><h3>Most common complaint types (last 12 months)</h3><div class="chart-box" style="height:380px"><canvas id="ch-cat"></canvas></div></div>
 </div>
 <div class="grid g2" style="margin-top:16px">
-  <div class="card"><h3>By month of year</h3><div class="chart-box"><canvas id="ch-mo"></canvas></div></div>
+  <div class="card"><h3>Requests with no completion date, by month logged</h3><div class="chart-box"><canvas id="ch-mo"></canvas></div></div>
   <div class="card"><h3>Typical time to close (median days, types with 20+ closed requests)</h3><div id="closing" style="max-height:340px;overflow:auto"></div></div>
 </div>
 </main>
@@ -34,19 +34,17 @@
 <script src="data/sr.js"></script>
 <script src="assets/common.js"></script>
 <script>
-window.onerror=function(m,src,l,c,e){const d=document.createElement('pre');d.style.cssText='background:#fdd;padding:10px;white-space:pre-wrap';d.textContent='JS ERROR: '+m+' line '+l;document.body.prepend(d);};
 buildHeader('service-requests.html');
 const M=D.sr.meta,R=D.sr.rows;
-const years=[...new Set(R.map(r=>r[2]))].sort();
-const fc=document.getElementById('f-cat'),fy=document.getElementById('f-yr');
+const months=[...new Set(R.map(r=>r[7]))].sort();
+const fc=document.getElementById('f-cat');
 fc.innerHTML='<option value="">All complaint types</option>'+M.cats.map((c,i)=>'<option value="'+i+'">'+esc(c)+'</option>').join('');
-fy.innerHTML='<option value="">All years</option>'+years.map(y=>'<option>'+y+'</option>').join('');
 const map=newMap('map',{focus:'ward'});
 const PAL=['#2980b9','#27ae60','#e67e22','#8e44ad','#c0392b','#16a085','#7f8c8d','#d35400','#2c3e50','#f1c40f'];
 let layer,heat=false,charts={};
 function selected(){
-  const c=fc.value===''?null:+fc.value, y=fy.value===''?null:+fy.value;
-  return R.filter(r=>(c===null||r[4]===c)&&(y===null||r[2]===y));
+  const c=fc.value===''?null:+fc.value;
+  return R.filter(r=>(c===null||r[4]===c));
 }
 function draw(){
   const S=selected();
@@ -62,14 +60,14 @@ function draw(){
   const top=Object.entries(S.reduce((o,r)=>{o[r[4]]=(o[r[4]]||0)+1;return o;},{})).sort((a,b)=>b[1]-a[1])[0];
   document.getElementById('stats').innerHTML=statCard(fmt(S.length),'requests in view',fc.value===''?'all types':'filtered')+
     statCard(med===null?'n/a':(med===1?'1 day':med+' days'),'median time to close',fmt(closed.length)+' closed requests')+
-    statCard(fmt(open),'with no completion date','usually still open or not recorded')+
+    statCard(fmt(open),'with no completion date','needs an admin to add one')+
     statCard(top?M.cats[top[0]]:'n/a','most common in view',top?fmt(top[1])+' requests':'');
-  // year chart (of the selected type)
-  const byY={};S.forEach(r=>byY[r[2]]=(byY[r[2]]||0)+1);
-  charts.y&&charts.y.destroy();charts.y=new Chart(document.getElementById('ch-yr'),{type:'bar',data:{labels:years.map(String),datasets:[{label:'Requests',data:years.map(y=>byY[y]||0),backgroundColor:'#0d6e6e'}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}});
-  // month chart
-  const byM=Array(12).fill(0);S.forEach(r=>byM[r[3]-1]++);
-  charts.m&&charts.m.destroy();charts.m=new Chart(document.getElementById('ch-mo'),{type:'bar',data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],datasets:[{data:byM,backgroundColor:'#2980b9'}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+  // requests per month logged (the last 12 months)
+  const byMo={};S.forEach(r=>byMo[r[7]]=(byMo[r[7]]||0)+1);
+  charts.y&&charts.y.destroy();charts.y=new Chart(document.getElementById('ch-yr'),{type:'bar',data:{labels:months,datasets:[{label:'Requests',data:months.map(m=>byMo[m]||0),backgroundColor:'#0d6e6e'}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+  // requests with no completion date, by month logged
+  const missMo={};S.filter(r=>r[6]===null).forEach(r=>missMo[r[7]]=(missMo[r[7]]||0)+1);
+  charts.m&&charts.m.destroy();charts.m=new Chart(document.getElementById('ch-mo'),{type:'bar',data:{labels:months,datasets:[{label:'No completion date',data:months.map(m=>missMo[m]||0),backgroundColor:'#c0392b'}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}});
 }
 // all-year category chart and closing-times table (independent of filters)
 const cnt=Array(M.cats.length).fill(0);R.forEach(r=>cnt[r[4]]++);
@@ -80,6 +78,6 @@ document.getElementById('closing').innerHTML='<table class="t"><tr><th>Complaint
 fc.addEventListener('change',draw);fy.addEventListener('change',draw);
 document.getElementById('f-heat').addEventListener('change',e=>{heat=e.target.checked;draw();});
 addLegend(map,'<b>Dots</b> = one service request each<br><span style="font-size:11px">Coloured by complaint type when not filtered</span>');
-draw();buildFooter('Service requests: City of Cape Town spatial service requests layer, January 2023 onward.');
+draw();buildFooter('Service requests: City of Cape Town spatial service requests layer, 18 November 2025 to 18 November 2026.');
 </script>
 </body></html>
