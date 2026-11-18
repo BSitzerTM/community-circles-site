@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Informal trade &amp; business · Ward 45</title>
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<main>
+<h1>Informal trade &amp; business licences</h1>
+<p class="lede">The City's informal trading bays, with their rental status, and the number of licensed businesses by suburb. Ward 45 has one trading site: Royal Road behind the Muizenberg flea market.</p>
+
+<div class="toolbar">
+  <label><input type="radio" name="scope" value="ward" checked> Ward 45 only</label>
+  <label><input type="radio" name="scope" value="sc"> All of Subcouncil 19</label>
+</div>
+<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr);gap:16px;align-items:start">
+  <div id="map" class="map tall"></div>
+  <div class="grid" style="gap:16px">
+    <div class="grid g2" id="stats" style="gap:12px"></div>
+    <div class="card"><h3>Rental status</h3><div class="chart-box" style="height:240px"><canvas id="ch-status"></canvas></div></div>
+  </div>
+</div>
+
+<h2>Bays by trading site</h2>
+<div class="grid g2">
+  <div class="card"><h3>Sites in the selected area</h3><div class="chart-box" style="height:360px"><canvas id="ch-sites"></canvas></div></div>
+  <div class="card"><h3>Payment status of rented bays</h3><div class="chart-box" style="height:360px"><canvas id="ch-dun"></canvas></div>
+    <p style="font-size:12px;color:#5d6b70">Dunning level shows how far behind on payments a bay is. "Level 0" means no outstanding payments.</p></div>
+</div>
+<div class="card" style="margin-top:16px"><h3>Ward 45 bays</h3><div id="bay-table"></div></div>
+
+<h2>Licensed businesses by suburb</h2>
+<p class="lede">Counts of City business licences by suburb (food, hawker and entertainment licences). Licence data has a suburb field but no coordinates, and Marina da Gama does not appear as a suburb label, so Muizenberg is the closest match for Ward 45.</p>
+<div class="card"><div class="chart-box" style="height:420px"><canvas id="ch-lic"></canvas></div></div>
+</main>
+
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="data/bounds.js"></script>
+<script src="data/trading.js"></script><script src="data/licences.js"></script>
+<script src="assets/common.js"></script>
+<script>
+buildHeader('business.html');
+const map=newMap('map',{focus:'ward'});
+const COL={Occupied:'#2e8b57',Vacant:'#e8a33d',Unassigned:'#8e8e8e'};
+let scope='ward',g,cs,csi,cd;
+const keep=f=>scope==='sc'||f.properties.w45;
+const site=n=>String(n||'').replace(/\s*-\s*Bay.*$/i,'').trim();
+function cen(f){const r=f.geometry.coordinates[0];return [r.reduce((a,p)=>a+p[1],0)/r.length,r.reduce((a,p)=>a+p[0],0)/r.length];}
+function build(){
+  g&&map.removeLayer(g);
+  const fs=D.trading.features.filter(keep);
+  g=L.layerGroup(fs.flatMap(f=>{
+    const col=COL[f.properties.RNTL_STS]||'#555';
+    return [L.geoJSON(f,{style:{color:col,weight:1,fillColor:col,fillOpacity:.6}}),
+            L.circleMarker(cen(f),{radius:scope==='sc'?5:9,color:'#222',weight:1,fillColor:col,fillOpacity:.9}).bindPopup('<b>'+esc(f.properties.BAY_NAME)+'</b><br>'+popupRows(f.properties,['RNTL_STS','BAY_STS','DNNG_LVL','ARCH_OBJ_ID']))];
+  })).addTo(map);
+  map.fitBounds(scope==='sc'?map.__sc.getBounds():map.__ward.getBounds().pad(0.2));
+  const cnt={Occupied:0,Vacant:0,Unassigned:0};fs.forEach(f=>cnt[f.properties.RNTL_STS]=(cnt[f.properties.RNTL_STS]||0)+1);
+  const tot=fs.length,rented=cnt.Occupied;
+  document.getElementById('stats').innerHTML=statCard(tot,'trading bays'+(scope==='ward'?' in Ward 45':' in Subcouncil 19'),scope==='ward'?D.trading.features.length+' across Subcouncil 19':'')+
+    statCard(rented,'occupied',tot?Math.round(100*rented/tot)+'% of bays':'')+statCard(cnt.Vacant,'vacant (available)')+statCard(cnt.Unassigned,'unassigned');
+  cs&&cs.destroy();cs=new Chart(document.getElementById('ch-status'),{type:'doughnut',data:{labels:Object.keys(cnt),datasets:[{data:Object.values(cnt),backgroundColor:Object.keys(cnt).map(k=>COL[k])}]},options:{maintainAspectRatio:false,plugins:{legend:{position:'right'}}}});
+  const bySite={};fs.forEach(f=>{const s=site(f.properties.BAY_NAME);const o=bySite[s]||(bySite[s]={Occupied:0,Vacant:0,Unassigned:0});o[f.properties.RNTL_STS]=(o[f.properties.RNTL_STS]||0)+1;});
+  const names=Object.keys(bySite).sort((a,b)=>Object.values(bySite[b]).reduce((x,y)=>x+y,0)-Object.values(bySite[a]).reduce((x,y)=>x+y,0)).slice(0,18);
+  csi&&csi.destroy();csi=new Chart(document.getElementById('ch-sites'),{type:'bar',data:{labels:names,datasets:['Occupied','Vacant','Unassigned'].map(k=>({label:k,backgroundColor:COL[k],data:names.map(n=>bySite[n][k]||0)}))},options:{indexAxis:'y',scales:{x:{stacked:true},y:{stacked:true,ticks:{font:{size:10}}}},maintainAspectRatio:false}});
+  const dun={};fs.filter(f=>f.properties.RNTL_STS==='Occupied').forEach(f=>{dun[f.properties.DNNG_LVL]=(dun[f.properties.DNNG_LVL]||0)+1;});
+  cd&&cd.destroy();cd=new Chart(document.getElementById('ch-dun'),{type:'bar',data:{labels:Object.keys(dun),datasets:[{data:Object.values(dun),backgroundColor:'#0d6e6e'}]},options:{plugins:{legend:{display:false}},maintainAspectRatio:false}});
+}
+document.querySelectorAll('[name=scope]').forEach(r=>r.addEventListener('change',e=>{scope=e.target.value;build();}));
+addLegend(map,Object.entries(COL).map(([k,c])=>'<i style="background:'+c+'"></i>'+k).join('<br>'));
+document.getElementById('bay-table').innerHTML='<table class="t"><tr><th>Bay</th><th>Bay status</th><th>Rental</th><th>Payment level</th></tr>'+D.trading.features.filter(f=>f.properties.w45).sort((a,b)=>a.properties.BAY_NAME.localeCompare(b.properties.BAY_NAME)).map(f=>'<tr><td>'+esc(f.properties.BAY_NAME)+'</td><td>'+esc(f.properties.BAY_STS)+'</td><td><span class="pill" style="background:'+COL[f.properties.RNTL_STS]+'33">'+esc(f.properties.RNTL_STS)+'</span></td><td>'+esc(f.properties.DNNG_LVL)+'</td></tr>').join('')+'</table>';
+// licences
+const L2=D.licences;const ks=Object.keys(L2).sort((a,b)=>Object.values(L2[b]).reduce((x,y)=>x+y,0)-Object.values(L2[a]).reduce((x,y)=>x+y,0));
+new Chart(document.getElementById('ch-lic'),{type:'bar',data:{labels:ks.map(k=>k.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())),datasets:[['Food','#c0392b'],['Hawker','#e8a33d'],['Entertainment','#2980b9']].map(([t,c])=>({label:t,backgroundColor:c,data:ks.map(k=>L2[k][t]||0)}))},options:{scales:{x:{stacked:true},y:{stacked:true}},maintainAspectRatio:false}});
+build();buildFooter('Trading bay status and business licence lists as published by the City.');
+</script>
+</body></html>

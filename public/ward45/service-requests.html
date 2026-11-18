@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Service requests · Marina Estate (Ward 45)</title>
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<main>
+<h1>Service requests in Ward 45</h1>
+<p class="lede">Every City service request (complaint or fault) logged since January 2023 for locations inside Ward 45, from the City's spatial service requests layer. Filter by complaint type and year, and see how long each type takes to close.</p>
+<div class="note"><strong>Scope and limits.</strong> Requests are placed on the map by their recorded coordinates. The City's suburb label is shown where recorded, and about 1,400 requests in the ward have no suburb label. Completion times are the gap between the created and completed dates, so requests still open are left out of those figures.</div>
+
+<div class="toolbar" style="margin-top:14px">
+  <label>Complaint type <select id="f-cat"></select></label>
+  <label>Year <select id="f-yr"></select></label>
+  <label><input type="checkbox" id="f-heat"> Show density (heatmap-style shading)</label>
+</div>
+<div class="grid g4" id="stats"></div>
+
+<div id="map" class="map tall" style="margin-top:16px"></div>
+
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><h3>Requests per year</h3><div class="chart-box"><canvas id="ch-yr"></canvas></div></div>
+  <div class="card"><h3>Most common complaint types (all years)</h3><div class="chart-box" style="height:380px"><canvas id="ch-cat"></canvas></div></div>
+</div>
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><h3>By month of year</h3><div class="chart-box"><canvas id="ch-mo"></canvas></div></div>
+  <div class="card"><h3>Typical time to close (median days, types with 20+ closed requests)</h3><div id="closing" style="max-height:340px;overflow:auto"></div></div>
+</div>
+</main>
+
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="data/bounds.js"></script>
+<script src="data/sr.js"></script>
+<script src="assets/common.js"></script>
+<script>
+window.onerror=function(m,src,l,c,e){const d=document.createElement('pre');d.style.cssText='background:#fdd;padding:10px;white-space:pre-wrap';d.textContent='JS ERROR: '+m+' line '+l;document.body.prepend(d);};
+buildHeader('service-requests.html');
+const M=D.sr.meta,R=D.sr.rows;
+const years=[...new Set(R.map(r=>r[2]))].sort();
+const fc=document.getElementById('f-cat'),fy=document.getElementById('f-yr');
+fc.innerHTML='<option value="">All complaint types</option>'+M.cats.map((c,i)=>'<option value="'+i+'">'+esc(c)+'</option>').join('');
+fy.innerHTML='<option value="">All years</option>'+years.map(y=>'<option>'+y+'</option>').join('');
+const map=newMap('map',{focus:'ward'});
+const PAL=['#2980b9','#27ae60','#e67e22','#8e44ad','#c0392b','#16a085','#7f8c8d','#d35400','#2c3e50','#f1c40f'];
+let layer,heat=false,charts={};
+function selected(){
+  const c=fc.value===''?null:+fc.value, y=fy.value===''?null:+fy.value;
+  return R.filter(r=>(c===null||r[4]===c)&&(y===null||r[2]===y));
+}
+function draw(){
+  const S=selected();
+  if(layer)map.removeLayer(layer);
+  const pts=S.map(r=>heat
+    ? L.circleMarker([r[1],r[0]],{radius:3,stroke:false,fillColor:'#c0392b',fillOpacity:.12,interactive:false})
+    : L.circleMarker([r[1],r[0]],{radius:3,stroke:false,fillColor:PAL[r[4]%PAL.length],fillOpacity:.6,interactive:false}));
+  layer=L.layerGroup(pts).addTo(map);
+  // stats
+  const closed=S.filter(r=>r[6]!==null);
+  const med=closed.length?closed.map(r=>r[6]).sort((a,b)=>a-b)[Math.floor(closed.length/2)]:null;
+  const open=S.length-closed.length;
+  const top=Object.entries(S.reduce((o,r)=>{o[r[4]]=(o[r[4]]||0)+1;return o;},{})).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('stats').innerHTML=statCard(fmt(S.length),'requests in view',fc.value===''?'all types':'filtered')+
+    statCard(med===null?'n/a':(med===1?'1 day':med+' days'),'median time to close',fmt(closed.length)+' closed requests')+
+    statCard(fmt(open),'with no completion date','usually still open or not recorded')+
+    statCard(top?M.cats[top[0]]:'n/a','most common in view',top?fmt(top[1])+' requests':'');
+  // year chart (of the selected type)
+  const byY={};S.forEach(r=>byY[r[2]]=(byY[r[2]]||0)+1);
+  charts.y&&charts.y.destroy();charts.y=new Chart(document.getElementById('ch-yr'),{type:'bar',data:{labels:years.map(String),datasets:[{label:'Requests',data:years.map(y=>byY[y]||0),backgroundColor:'#0d6e6e'}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+  // month chart
+  const byM=Array(12).fill(0);S.forEach(r=>byM[r[3]-1]++);
+  charts.m&&charts.m.destroy();charts.m=new Chart(document.getElementById('ch-mo'),{type:'bar',data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],datasets:[{data:byM,backgroundColor:'#2980b9'}]},options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+}
+// all-year category chart and closing-times table (independent of filters)
+const cnt=Array(M.cats.length).fill(0);R.forEach(r=>cnt[r[4]]++);
+const topCats=cnt.map((n,i)=>[i,n]).sort((a,b)=>b[1]-a[1]).slice(0,15);
+charts.c=new Chart(document.getElementById('ch-cat'),{type:'bar',data:{labels:topCats.map(t=>M.cats[t[0]]),datasets:[{data:topCats.map(t=>t[1]),backgroundColor:topCats.map(t=>PAL[t[0]%PAL.length])}]},options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{autoSkip:false,font:{size:10}}}}}});
+const closeRows=Object.entries(M.medianDays).map(([c,d])=>{const n=R.filter(r=>M.cats[r[4]]===c&&r[6]!==null).length;return [c,d,n];}).filter(x=>x[2]>=20).sort((a,b)=>b[1]-a[1]);
+document.getElementById('closing').innerHTML='<table class="t"><tr><th>Complaint type</th><th class="num">Median days</th><th class="num">Closed</th></tr>'+closeRows.map(x=>'<tr><td>'+esc(x[0])+'</td><td class="num">'+x[1]+'</td><td class="num">'+fmt(x[2])+'</td></tr>').join('')+'</table>';
+fc.addEventListener('change',draw);fy.addEventListener('change',draw);
+document.getElementById('f-heat').addEventListener('change',e=>{heat=e.target.checked;draw();});
+addLegend(map,'<b>Dots</b> = one service request each<br><span style="font-size:11px">Coloured by complaint type when not filtered</span>');
+draw();buildFooter('Service requests: City of Cape Town spatial service requests layer, January 2023 onward.');
+</script>
+</body></html>

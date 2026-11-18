@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Water, wetlands &amp; soils · Ward 45</title>
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<main>
+<h1>Water quality, wetlands &amp; soils</h1>
+<p class="lede">Zandvlei and the Marina da Gama canals are monitored by the City at 10 sites inside Ward 45, and 35 across Subcouncil 19. Pick a measure, click a site for its history, and switch the wetland and soil layers on to see how the land and water fit together.</p>
+
+<div class="toolbar">
+  <label><strong>Measure</strong> <select id="p-sel"></select></label>
+  <span style="width:10px"></span>
+  <label><input type="radio" name="scope" value="ward" checked> Ward 45 only</label>
+  <label><input type="radio" name="scope" value="sc"> All of Subcouncil 19</label>
+  <span style="width:10px"></span>
+  <label><input type="checkbox" id="c-sites" checked> Monitoring sites</label>
+  <label><input type="checkbox" id="c-wet" checked> Wetlands</label>
+  <label><input type="checkbox" id="c-wc"> Watercourses</label>
+  <label><input type="checkbox" id="c-soil"> Soils</label>
+</div>
+<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(300px,2fr);gap:16px;align-items:start">
+  <div id="map" class="map tall"></div>
+  <div class="card" id="side"><h3>Click a monitoring site</h3><p style="color:#5d6b70">Site history, sample counts and the latest reading will appear here.</p></div>
+</div>
+<div class="grid g4" id="stats" style="margin-top:16px"></div>
+<div class="note info" style="margin-top:14px" id="guide"></div>
+
+<h2>Ward 45 monitoring sites</h2>
+<div class="card" style="overflow:auto"><div id="site-table"></div></div>
+
+<h2>Wetlands</h2>
+<div class="grid g2">
+  <div class="card"><h3>Wetlands touching Ward 45</h3><div id="wet-table" style="max-height:420px;overflow:auto"></div></div>
+  <div class="card"><h3>Ecological condition (all wetland area in Ward 45)</h3><div class="chart-box"><canvas id="ch-pes"></canvas></div><p style="font-size:12px;color:#5d6b70">PES = present ecological state, A (unmodified) to F (critically modified). "Unknown" means the City has not assessed that wetland.</p></div>
+</div>
+
+<h2>Soils</h2>
+<div class="grid g2">
+  <div class="card"><h3>Soil units touching Ward 45 and Subcouncil 19</h3><div id="soil-table"></div></div>
+  <div class="card"><h3>Landfill and waste sites on the ward edge</h3><div id="lf"></div></div>
+</div>
+</main>
+
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="data/bounds.js"></script>
+<script src="data/water.js"></script><script src="data/wetlands.js"></script><script src="data/watercourses.js"></script><script src="data/soils.js"></script><script src="data/landfill.js"></script>
+<script src="assets/common.js"></script>
+<script>
+buildHeader('water.html');
+const map=newMap('map',{focus:'ward'});
+const P=D.water.params, S=D.water.sites;
+let scope='ward',param='ecoli',gSites,gWet,gWc,gSoil,sel=null,chart=null;
+const psel=document.getElementById('p-sel');
+psel.innerHTML=Object.entries(P).map(([k,v])=>'<option value="'+k+'">'+esc(v.label)+(v.unit?' ('+esc(v.unit)+')':'')+'</option>').join('');
+psel.value=param;
+const GUIDE={ecoli:'E. coli: green = at or under 130 per 100 mL, amber = 130 to 1,000, red = over 1,000. These are indicative reference values for full-contact recreation (DWAF 1996) used to read the data; this report is not a compliance finding. CFU and MPN counts are combined; monthly values are geometric means.',
+ do:'Dissolved oxygen: red = under 5 mg/L, a level below which many aquatic species are stressed.',
+ ph:'pH: no colour scale; most healthy fresh waters sit between about 6.5 and 8.5.'};
+function lastVal(s){const x=s.summary[param];return x?x.lastVal:null;}
+function colourFor(s){
+  const x=s.summary[param]; if(!x)return '#bbb';
+  const v=x.lastVal;
+  if(param==='ecoli')return v>1000?'#c0392b':v>130?'#e8a33d':'#2e8b57';
+  if(param==='do')return v<5?'#c0392b':'#2e8b57';
+  const all=S.map(lastVal).filter(v=>v!=null).sort((a,b)=>a-b);const q1=all[Math.floor(all.length/3)],q2=all[Math.floor(2*all.length/3)];
+  return v<=q1?'#a6cee3':v<=q2?'#3182bd':'#08306b';
+}
+const keep=f=>scope==='sc'||f.properties.w45;
+const PES={'A - unmodified':'#1a9850','B - largely natural':'#66bd63','C - moderately modified':'#fdae61','D - largely modified':'#f46d43','E - seriously modified':'#d73027','F - critically modified':'#a50026'};
+const SOILC=['#d9c39a','#c2a878','#b08968','#9c6644','#7f5539','#d6ccc2'];
+function build(){
+  [gSites,gWet,gWc,gSoil].forEach(g=>g&&map.removeLayer(g));
+  gWet=L.geoJSON({type:'FeatureCollection',features:D.wetlands.features.filter(keep)},{style:f=>({color:'#1d6b6b',weight:1,fillColor:PES[f.properties.PES]||'#5fb8b8',fillOpacity:.5}),
+    onEachFeature:(f,l)=>l.bindPopup('<b>'+esc(f.properties.WTLN_NAME)+'</b><br>'+popupRows(f.properties,['ANTH_TYPE','PES','EIS','CBA_CTGR','SLNT','AREA_HCTR']))});
+  gWc=L.geoJSON({type:'FeatureCollection',features:D.watercourses.features.filter(keep)},{style:{color:'#3a7bd5',weight:1.5,opacity:.8},interactive:false});
+  gSoil=L.geoJSON({type:'FeatureCollection',features:D.soils.features.filter(keep)},{style:f=>({color:'#6b4a2f',weight:1,fillColor:SOILC[(f.properties.SYMB_CLS?String(f.properties.SYMB_CLS).length:0)%6],fillOpacity:.5}),
+    onEachFeature:(f,l)=>l.bindPopup('<b>'+esc(f.properties.SYMB_CLS)+'</b><br>'+esc(f.properties.SYMB_DSCR)+'<br>Depth: '+esc(f.properties.DPTH_DSCR))});
+  gSites=L.layerGroup(S.filter(s=>scope==='sc'||s.w45).map(s=>{
+    const m=L.circleMarker([s.lat,s.lon],{radius:s.w45?10:7,color:s.w45?'#000':'#444',weight:s.w45?2.5:1,fillColor:colourFor(s),fillOpacity:.95});
+    m.bindTooltip(esc(s.name)+(lastVal(s)!=null?' · '+lastVal(s):''));m.on('click',()=>pick(s));return m;}));
+  if(c('c-wet'))gWet.addTo(map); if(c('c-wc'))gWc.addTo(map); if(c('c-soil'))gSoil.addTo(map); if(c('c-sites'))gSites.addTo(map);
+  map.fitBounds(scope==='sc'?map.__sc.getBounds():map.__ward.getBounds().pad(0.25));
+  stats();table();
+  document.getElementById('guide').textContent=GUIDE[param]||('Colour bands show where each site\'s latest reading falls among all sites (light, medium, dark = low, middle, high). No health guideline is applied for this measure.');
+}
+const c=id=>document.getElementById(id).checked;
+function stats(){
+  const w=S.filter(s=>s.w45),wd=w.filter(s=>s.summary[param]);
+  const meds=wd.map(s=>s.summary[param].median);
+  const worst=wd.slice().sort((a,b)=>(b.summary[param].median-a.summary[param].median))[0];
+  document.getElementById('stats').innerHTML=statCard(w.length,'monitoring sites in Ward 45',S.length+' in Subcouncil 19')+
+   statCard(wd.length?fmt(Math.round(wd.reduce((a,s)=>a+s.summary[param].n,0))):'0','samples of '+P[param].label.toLowerCase()+' (Ward 45 sites)')+
+   statCard(meds.length?(()=>{const m=meds.slice().sort((a,b)=>a-b),v=m.length%2?m[(m.length-1)/2]:(m[m.length/2-1]+m[m.length/2])/2;return v<10?v.toFixed(2):Math.round(v).toLocaleString('en-ZA');})():'n/a','middle site median'+(P[param].unit?' ('+P[param].unit+')':''),'one extreme site would skew an average')+
+   statCard(worst?worst.summary[param].median.toLocaleString('en-ZA'):'n/a','highest site median (Ward 45)',worst?worst.name:'');
+}
+function table(){
+  const w=S.filter(s=>s.w45).sort((a,b)=>(b.summary.ecoli?b.summary.ecoli.median:-1)-(a.summary.ecoli?a.summary.ecoli.median:-1));
+  const f=(s,k,key)=>s.summary[k]&&s.summary[k][key]!=null?s.summary[k][key]:'–';
+  document.getElementById('site-table').innerHTML='<table class="t"><tr><th>Site</th><th>Type</th><th class="num">E. coli median</th><th class="num">% over 130</th><th class="num">% over 1,000</th><th class="num">Low oxygen %</th><th>Latest sample</th></tr>'+
+   w.map(s=>'<tr data-c="'+s.code+'" style="cursor:pointer"><td>'+esc(s.name)+'<br><span style="color:#777;font-size:12px">'+esc(s.code)+'</span></td><td>'+esc(s.kind)+'</td><td class="num">'+f(s,'ecoli','median')+'</td><td class="num">'+f(s,'ecoli','pct130')+'</td><td class="num">'+f(s,'ecoli','pct1000')+'</td><td class="num">'+f(s,'do','pctLow')+'</td><td>'+esc(Object.values(s.summary).map(x=>x.last).sort().pop()||'–')+'</td></tr>').join('')+'</table>';
+  document.querySelectorAll('#site-table tr[data-c]').forEach(tr=>tr.addEventListener('click',()=>{const s=S.find(x=>x.code===tr.dataset.c);pick(s);map.setView([s.lat,s.lon],15);window.scrollTo({top:0,behavior:'smooth'});}));
+}
+function pick(s){
+  sel=s;
+  const sm=s.summary[param];
+  document.getElementById('side').innerHTML='<h3>'+esc(s.name)+'</h3><span class="pill '+(s.w45?'ward':'sc')+'">'+(s.w45?'Ward 45':'Subcouncil 19')+'</span><span class="pill">'+esc(s.kind)+'</span><span class="pill">'+esc(s.code)+'</span>'+
+   '<p style="font-size:13px;color:#5d6b70;margin:6px 0">Tested for: '+esc(s.tests)+'</p>'+
+   (sm?'<p style="font-size:14px">'+esc(P[param].label)+': latest <b>'+sm.lastVal+'</b> '+esc(P[param].unit)+' ('+esc(sm.last)+'), median '+sm.median+', 90th percentile '+sm.p90+'; '+sm.n+' samples since '+esc(sm.first)+'.</p>':'<p>No '+esc(P[param].label)+' results at this site.</p>')+
+   '<div class="chart-box" style="height:260px"><canvas id="ch-site"></canvas></div>';
+  const ser=s.series[param]; if(!ser)return;
+  const labels=Object.keys(ser);const data=labels.map(k=>ser[k][0]);
+  const ds=[{label:P[param].label+' (monthly '+(param==='ecoli'?'geometric mean':'mean')+')',data,borderColor:'#0d6e6e',backgroundColor:'#0d6e6e',pointRadius:2,tension:.15}];
+  if(param==='ecoli'){ds.push({label:'130 (target)',data:labels.map(()=>130),borderColor:'#e8a33d',borderDash:[5,4],pointRadius:0});ds.push({label:'1,000',data:labels.map(()=>1000),borderColor:'#c0392b',borderDash:[5,4],pointRadius:0});}
+  if(param==='do')ds.push({label:'5 mg/L',data:labels.map(()=>5),borderColor:'#c0392b',borderDash:[5,4],pointRadius:0});
+  chart&&chart.destroy();
+  chart=new Chart(document.getElementById('ch-site'),{type:'line',data:{labels,datasets:ds},options:{maintainAspectRatio:false,scales:{y:{type:param==='ecoli'?'logarithmic':'linear'},x:{ticks:{maxTicksLimit:8}}},plugins:{legend:{labels:{boxWidth:10,font:{size:11}}}}}});
+}
+psel.addEventListener('change',()=>{param=psel.value;build();if(sel)pick(sel);});
+document.querySelectorAll('[name=scope]').forEach(r=>r.addEventListener('change',e=>{scope=e.target.value;build();}));
+['c-sites','c-wet','c-wc','c-soil'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{const g={'c-sites':gSites,'c-wet':gWet,'c-wc':gWc,'c-soil':gSoil}[id];c(id)?g.addTo(map):map.removeLayer(g);}));
+addLegend(map,'<b>Site colour</b><br><i style="background:#2e8b57"></i>good<br><i style="background:#e8a33d"></i>fair<br><i style="background:#c0392b"></i>poor<br><i style="background:#bbb"></i>no data<br><span style="font-size:11px">Black ring = inside Ward 45</span>');
+
+// wetlands table + chart (Ward 45 only)
+const wet=D.wetlands.features.filter(f=>f.properties.w45).map(f=>f.properties);
+const byName={};wet.forEach(p=>{const k=p.WTLN_NAME||'unknown';const o=byName[k]||(byName[k]={n:0,ha:0,type:p.ANTH_TYPE,pes:p.PES,eis:p.EIS});o.n++;o.ha+=p.AREA_HCTR||0;});
+document.getElementById('wet-table').innerHTML='<table class="t"><tr><th>Name</th><th>Type</th><th>Condition (PES)</th><th>Importance (EIS)</th><th class="num">Parts</th><th class="num">Hectares</th></tr>'+
+  Object.entries(byName).sort((a,b)=>b[1].ha-a[1].ha).map(([k,o])=>'<tr><td>'+esc(k)+'</td><td>'+esc(o.type)+'</td><td>'+esc(o.pes)+'</td><td>'+esc(o.eis)+'</td><td class="num">'+o.n+'</td><td class="num">'+o.ha.toFixed(1)+'</td></tr>').join('')+'</table>';
+const pesHa={};wet.forEach(p=>{const k=p.PES||'unknown';pesHa[k]=(pesHa[k]||0)+(p.AREA_HCTR||0);});
+const pk=Object.keys(pesHa);
+new Chart(document.getElementById('ch-pes'),{type:'doughnut',data:{labels:pk.map(k=>k+' ('+pesHa[k].toFixed(0)+' ha)'),datasets:[{data:pk.map(k=>+pesHa[k].toFixed(1)),backgroundColor:pk.map(k=>PES[k]||'#bdbdbd')}]},options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}}});
+// soils
+const soilRows=[...new Map(D.soils.features.map(f=>[f.properties.SYMB_CLS+'|'+f.properties.DPTH_DSCR,f.properties])).values()];
+document.getElementById('soil-table').innerHTML='<table class="t"><tr><th>Soil class</th><th>Description</th><th>Depth</th><th class="num">Hectares in SC19</th><th>In Ward 45?</th></tr>'+
+ soilRows.map(p=>{const fs=D.soils.features.filter(f=>f.properties.SYMB_CLS===p.SYMB_CLS&&f.properties.DPTH_DSCR===p.DPTH_DSCR);return '<tr><td>'+esc(p.SYMB_CLS)+'</td><td style="font-size:12px">'+esc(p.SYMB_DSCR)+'</td><td>'+esc(p.DPTH_DSCR)+'</td><td class="num">'+fs.reduce((a,f)=>a+(f.properties.AREA_HCTR||0),0).toFixed(0)+'</td><td>'+(fs.some(f=>f.properties.w45)?'Yes':'No')+'</td></tr>';}).join('')+'</table>';
+document.getElementById('lf').innerHTML='<table class="t"><tr><th>Site</th><th>Type</th><th>Status</th><th>Address</th></tr>'+D.landfill.features.map(f=>'<tr><td>'+esc(f.properties.NAME)+'</td><td>'+esc(f.properties.TYPE)+'</td><td>'+esc(f.properties.STATUS)+'</td><td>'+esc(f.properties.ADRS)+'</td></tr>').join('')+'</table><p style="font-size:12px;color:#5d6b70">Coastal Park is on Baden Powell Drive at the edge of Ward 45.</p>';
+build();buildFooter('Water results: City inland water quality programme.');
+</script>
+</body></html>

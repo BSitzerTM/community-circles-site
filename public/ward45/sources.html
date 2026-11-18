@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sources &amp; method · Ward 45</title>
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<main>
+<h1>Sources &amp; method</h1>
+<p class="lede">Everything here comes from the City of Cape Town Open Data Portal unless stated. Data was pulled on 2026-11-17; "updated" is the date the City last modified each dataset.</p>
+
+<h2>How the numbers were worked out</h2>
+<div class="card"><ul style="margin:0;padding-left:18px;line-height:1.7">
+<li><b>Ward 45 and Subcouncil 19.</b> The 2026 ward boundary and the City's subcouncil layer. Sampling 978 points across Ward 45 put 956 in Subcouncil 19; the rest fall outside any subcouncil polygon. A map layer counts for Ward 45 if it <i>touches</i> the ward boundary, so features on the edge are included.</li>
+<li><b>Tables without coordinates</b> (fire incidents, crashes, air quality, recyclers, licences, valuations) cannot be tied to the ward boundary. They are grouped by suburb or police precinct instead, and suburb names were cleaned by hand (for example "LAVENDERHILL" and "Lavender Hill East" both count as Lavender Hill).</li>
+<li><b>Crash locations.</b> Each crash record names a road and area. Names were matched to the City's road centrelines; route numbers (such as M4) were limited to the suburb in the record; intersections are placed where two named roads come within about 200 m. About 81% of records (11,136 of 13,720) matched a road; the other 19% appear in the charts only.</li>
+<li><b>Air quality stations</b> have no coordinates in the data. They are placed at the centre of the suburb they are named after, so distances are approximate. The nearest station is Athlone at 14.5 km.</li>
+<li><b>Water quality.</b> E. coli counts (CFU and MPN) are combined and shown as monthly geometric means. The 130 and 1,000 per 100 mL lines are indicative reference values for recreational contact (DWAF 1996). They help read the data; this is not a compliance assessment.</li>
+<li><b>Population over time.</b> The portal has one population estimate (2025). Home values and the number of residential properties from five valuation rolls stand in for change over time.</li>
+<li><b>Budget figures</b> come from the City's published budget annexures (2023/24 Annexure 38 and 2024/25 Annexure 33), not the portal.</li>
+</ul></div>
+
+<h2>Known limits</h2>
+<div class="card"><ul style="margin:0;padding-left:18px;line-height:1.7">
+<li>Fire incident records thin out sharply from 2019 to 2022 and look incomplete; do not read that as fewer incidents.</li>
+<li>The ward boundary does not follow suburb lines, so suburb totals can't be added up to a ward total.</li>
+<li>Marina da Gama is not an official planning suburb. It is shown where the City lists it separately (population, fire records, and the residents' association boundary).</li>
+<li>Some layers are served from the City's QA server, which may differ from the production data.</li>
+<li>The household survey is a sample; small areas have wide margins of error.</li>
+</ul></div>
+
+<h2>Datasets used</h2>
+<div class="card"><table class="t"><tr><th>Dataset</th><th>Used for</th><th>Updated</th></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::wards">Wards</a></td><td>Ward 45 boundary (2026), used to count and flag every layer</td><td>2026-10-30</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::sub-councils-1">Sub councils</a></td><td>Subcouncil 19 boundary and the Ward 45 to Subcouncil 19 match</td><td>2026-07-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::official-planning-suburbs">Official Planning Suburbs</a></td><td>Suburb shapes for the fire map and road-crash matching</td><td>2026-07-27</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::places-of-worship-1">Places of Worship</a></td><td>Community map</td><td>2026-07-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::parks-1">Parks</a></td><td>Community map</td><td>2026-07-28</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::recreational-hubs">Recreational Hubs</a></td><td>Community map</td><td>2026-07-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::health-care-facilities-clinics-hospitals">Health Care Facilities (Clinics, Hospitals)</a></td><td>Community map</td><td>2026-07-27</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::city-owned-ecd-centres">City Owned ECD Centres</a></td><td>Community map</td><td>2026-07-28</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::fire-stations">Fire Stations</a></td><td>Fire page</td><td>2026-07-28</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::fire-incidence-january-2017-to-july-2022">Fire Incidence January 2017 to July 2022</a></td><td>Fire incidents (no coordinates; suburb and street only)</td><td>2026-09-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::fire-incidence-2009-to-2016-1">Fire Incidence 2009 to 2016</a></td><td>Fire incidents 2009 to 2016</td><td>2026-09-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::refuse-collection-beats">Refuse Collection Beats</a></td><td>Collection days map</td><td>2026-07-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::think-twice-areas-recycling">Think Twice Areas - Recycling</a></td><td>Recycling contractor</td><td>2026-07-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::landfill-sites-and-refuse-transfer-stations">Landfill Sites And Refuse Transfer Stations</a></td><td>Coastal Park landfill and planned transfer station</td><td>2026-07-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::waste-recyclers">Waste Recyclers</a></td><td>Private recycler list, grouped by suburb</td><td>2026-02-18</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::informal-trading-bay-rental-status">Informal Trading Bay (Rental Status)</a></td><td>Trading bays and rental status</td><td>2026-07-28</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::business-licences">Business Licences</a></td><td>Licence counts by suburb</td><td>2025-07-30</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::rate-payers-associations">Rate Payers Associations</a></td><td>Association boundaries</td><td>2026-07-27</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::home-owners-associations-gv-2021">Home Owners Associations (GV 2021)</a></td><td>Homeowners association boundaries</td><td>2023-11-13</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::population-estimates-2025-suburb-level">Population Estimates 2025 (Suburb Level)</a></td><td>Population and households by suburb</td><td>2026-11-09</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::valuation-suburbs-2012-and-2015">Valuation Suburbs 2012 and 2015</a></td><td>Home values over time</td><td>2026-02-26</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::valuations-suburbs-2018-and-2022">Valuations Suburbs 2018 and 2022</a></td><td>Home values over time</td><td>2026-02-26</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::valuations-suburbs-for-2022-and-2025">Valuations Suburbs for 2022 and 2025</a></td><td>Home values over time</td><td>2026-07-24</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::2024-household-survey">2024 Household Survey</a></td><td>Dwelling type, tenure and income by survey area</td><td>2026-03-17</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::municipal-arrears-for-subcouncils">Municipal Arrears  for Subcouncils</a></td><td>Arrears for Subcouncil 19</td><td>2026-03-06</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::traffic-accidents-crash-data-statistics-2019-to-2024">Traffic Accidents (Crash Data) Statistics 2019 to 2024</a></td><td>Crash records for five police precincts</td><td>2026-02-17</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::tct-road-centerline">TCT Road Centerline</a></td><td>Road geometry to place crashes</td><td>2026-07-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::taxi-routes">Taxi Routes</a></td><td>Taxi routes</td><td>2026-07-27</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::speed-bumps-1">Speed Bumps</a></td><td>Traffic calming</td><td>2026-07-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::pedestrian-crossing">Pedestrian Crossing</a></td><td>Pedestrian crossings</td><td>2026-07-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::air-quality-particulate-matterpm10-2022-to-2024">Air Quality   Particulate Matter(PM10) 2022 to 2024</a></td><td>Air page</td><td>2026-05-19</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::air-quality-nitrogen-dioxideno2-2022-to-2024">Air Quality   Nitrogen Dioxide(NO2) 2022 to 2024</a></td><td>Air page</td><td>2026-05-15</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::air-quality-sulphur-dioxideso2-2022-to-2024">Air Quality   Sulphur Dioxide(SO2) 2022 to 2024</a></td><td>Air page</td><td>2026-05-15</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::air-quality-ozoneo3-2022-to-2024">Air Quality   Ozone(O3) 2022 to 2024</a></td><td>Air page</td><td>2026-05-19</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::routine-inland-water-quality-monitoring">Routine Inland Water Quality Monitoring</a></td><td>Monitoring site locations</td><td>2026-07-27</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::inland-water-quality-results-raw">Inland Water Quality Results (Raw)</a></td><td>48,000 sample results for 35 sites</td><td>2026-10-12</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::wetlands-2">Wetlands</a></td><td>Wetlands and their ecological condition</td><td>2026-07-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::open-watercourses">Open Watercourses</a></td><td>Rivers and streams</td><td>2026-07-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::soils">Soils</a></td><td>Soil units</td><td>2026-07-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::nodes-1">Nodes</a></td><td>Planning</td><td>2026-07-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::new-development-areas">New Development Areas</a></td><td>Planning</td><td>2026-07-28</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::spatial-transformation-areas">Spatial Transformation Areas</a></td><td>Planning</td><td>2026-07-29</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::mixed-use-intensification-areas">Mixed Use Intensification Areas</a></td><td>Planning</td><td>2026-07-28</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::local-area-overlay-zones">Local Area Overlay Zones</a></td><td>Planning</td><td>2026-07-28</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::environmental-focus-areas-1">Environmental Focus Areas</a></td><td>Planning</td><td>2026-07-28</td></tr>
+<tr><td><a href="https://odp-cctegis.opendata.arcgis.com/datasets/cctegis::urban-development-edge">Urban Development Edge</a></td><td>Planning</td><td>2026-07-29</td></tr>
+</table></div>
+
+<h2>Tools</h2>
+<div class="card"><p style="margin:0">Maps use <a href="https://leafletjs.com">Leaflet</a> with the Esri World Street Map basemap, with <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> data; charts use <a href="https://www.chartjs.org">Chart.js</a>. The pages load these libraries and map tiles from the internet, so they need a connection to display. All report data is stored in the <code>data</code> folder next to the pages.</p></div>
+</main>
+<script src="data/bounds.js"></script><script src="assets/common.js"></script>
+<script>buildHeader('sources.html');buildFooter();</script>
+</body></html>

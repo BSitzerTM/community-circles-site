@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>People &amp; ratepayers · Ward 45</title>
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<main>
+<h1>People, homes &amp; ratepayers</h1>
+<p class="lede">Who lives in Ward 45's suburbs, what homes are worth, and which ratepayers' and homeowners' associations represent the area and its neighbours.</p>
+
+<div class="note"><strong>No population history in the portal.</strong> The City publishes one population estimate (2025) per suburb. For change over time, this page uses the valuation rolls (2012, 2015, 2018, 2022, 2025), which record median home values and the number of residential properties. Ward 45's boundary doesn't follow suburb lines, so suburb figures can't be summed into a ward total.</div>
+
+<h2>Population and households, 2025 estimate</h2>
+<div class="grid g4" id="pop-stats"></div>
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><h3>Estimated population by suburb</h3><div class="chart-box" style="height:360px"><canvas id="ch-pop"></canvas></div></div>
+  <div class="card"><h3>Households and average household size</h3><div id="pop-table"></div></div>
+</div>
+
+<h2>Homes over time (valuation rolls)</h2>
+<div class="toolbar" id="val-chips"></div>
+<div class="grid g2">
+  <div class="card"><h3>Median home value, 2012 to 2025</h3><div class="chart-box"><canvas id="ch-val"></canvas></div></div>
+  <div class="card"><h3>Residential properties on the roll</h3><div class="chart-box"><canvas id="ch-n"></canvas></div><p style="font-size:12px;color:#5d6b70">Counts for 2015, 2022 and 2025 rolls. A rising count means new homes were added to the roll.</p></div>
+</div>
+
+<h2>Household survey 2024</h2>
+<p class="lede">A sample survey of households. Areas follow the survey's own groupings, which differ from the ward and suburb boundaries. "Lakeside / Marina da Gama / Westlake" is the closest match to Ward 45's core.</p>
+<div class="toolbar"><label><strong>Survey area</strong> <select id="hh-sel"></select></label><span id="hh-n" style="color:#5d6b70"></span></div>
+<div class="grid g3">
+  <div class="card"><h3>Dwelling type</h3><div class="chart-box" style="height:260px"><canvas id="ch-dw"></canvas></div></div>
+  <div class="card"><h3>Tenure</h3><div class="chart-box" style="height:260px"><canvas id="ch-ten"></canvas></div></div>
+  <div class="card"><h3>Household income per month</h3><div class="chart-box" style="height:340px"><canvas id="ch-inc"></canvas></div></div>
+</div>
+<div class="note info" style="margin-top:14px">The survey is a sample, so small areas carry a wide margin of error. Many households answered "Don't know" on income.</div>
+
+<h2>Ratepayers' and homeowners' associations</h2>
+<div class="toolbar">
+  <label><input type="checkbox" id="c-rp" checked> Ratepayers / residents' associations</label>
+  <label><input type="checkbox" id="c-hoa" checked> Homeowners' associations (valuation-roll year 2021)</label>
+</div>
+<div id="map" class="map tall"></div>
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><h3>Associations touching Ward 45</h3><div id="rp-w45"></div></div>
+  <div class="card"><h3>Other associations in Subcouncil 19</h3><div id="rp-other" style="max-height:300px;overflow:auto"></div></div>
+</div>
+<div class="card" style="margin-top:16px"><h3>Homeowners' associations in Ward 45</h3><div id="hoa-list" style="max-height:360px;overflow:auto"></div></div>
+</main>
+
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="data/bounds.js"></script>
+<script src="data/people.js"></script><script src="data/ratepayers.js"></script><script src="data/hoa.js"></script>
+<script src="assets/common.js"></script>
+<script>
+buildHeader('people.html');
+const pop=D.people.pop,val=D.people.val,hh=D.people.hh;
+const POPS=['Muizenberg','Lakeside','Marina da Gama','Vrygrond','Lavender Hill','Steenberg','Capricorn','Capri','Kalk Bay','St James','Fish Hoek'];
+const W45=['MUIZENBERG','LAKESIDE','MARINA DA GAMA','VRYGROND','LAVENDER HILL','STEENBERG'];
+const rows=POPS.map(n=>({n,...(pop[n.toUpperCase()]||{pop:0,hh:0})})).filter(r=>r.pop);
+const core=['Muizenberg','Lakeside','Marina da Gama'].map(n=>pop[n.toUpperCase()]).filter(Boolean);
+document.getElementById('pop-stats').innerHTML=
+ statCard(fmt(pop['MARINA DA GAMA'].pop),'Marina da Gama, estimated population',fmt(pop['MARINA DA GAMA'].hh)+' households')+
+ statCard(fmt(core.reduce((a,x)=>a+x.pop,0)),'Muizenberg + Lakeside + Marina da Gama','combined estimate, 2025')+
+ statCard(fmt(rows.reduce((a,x)=>a+x.pop,0)),'all suburbs charted here','includes Vrygrond and Lavender Hill')+
+ statCard((pop['MARINA DA GAMA'].pop/pop['MARINA DA GAMA'].hh).toFixed(1),'people per household, Marina da Gama');
+new Chart(document.getElementById('ch-pop'),{type:'bar',data:{labels:rows.map(r=>r.n),datasets:[{label:'Estimated population',data:rows.map(r=>r.pop),backgroundColor:rows.map(r=>W45.includes(r.n.toUpperCase())?'#c0392b':'#9fb8b8')}]},options:{indexAxis:'y',plugins:{legend:{display:false}},maintainAspectRatio:false}});
+document.getElementById('pop-table').innerHTML='<table class="t"><tr><th>Suburb</th><th class="num">Population</th><th class="num">Households</th><th class="num">People / household</th></tr>'+rows.map(r=>'<tr><td>'+esc(r.n)+'</td><td class="num">'+fmt(r.pop)+'</td><td class="num">'+fmt(r.hh)+'</td><td class="num">'+(r.pop/r.hh).toFixed(1)+'</td></tr>').join('')+'</table><p style="font-size:12px;color:#5d6b70">Red bars: suburbs that touch Ward 45.</p>';
+
+// valuations
+const VS=['MUIZENBERG','LAKESIDE','ST JAMES','KALK BAY','FISH HOEK','SUNNYDALE','STEENBERG','SEAWINDS','VRYGROND','LAVENDER HILL','RETREAT'];
+const PAL=['#c0392b','#2980b9','#27ae60','#8e44ad','#e67e22','#16a085','#7f8c8d','#d35400','#2c3e50','#f1c40f','#e84393'];
+const YRS=['2012','2015','2018','2022','2025'];
+let vsel=new Set(['MUIZENBERG','LAKESIDE','ST JAMES','KALK BAY']);let cv,cn;
+const chips=document.getElementById('val-chips');
+chips.innerHTML='<strong>Suburbs:</strong>'+VS.map((s,i)=>'<label><input type="checkbox" value="'+s+'"'+(vsel.has(s)?' checked':'')+'><span style="color:'+PAL[i]+'">&#9632;</span> '+s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())+'</label>').join('');
+function drawVal(){
+  const sel=VS.filter(s=>vsel.has(s));
+  cv&&cv.destroy();cv=new Chart(document.getElementById('ch-val'),{type:'line',data:{labels:YRS,datasets:sel.map(s=>({label:s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()),data:YRS.map(y=>val[s]?val[s][y]:null),borderColor:PAL[VS.indexOf(s)],backgroundColor:PAL[VS.indexOf(s)],tension:.15,spanGaps:true}))},options:{maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>'R'+(v/1e6).toFixed(1)+'m'}}},plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': R'+fmt(c.parsed.y)}}}}});
+  cn&&cn.destroy();cn=new Chart(document.getElementById('ch-n'),{type:'bar',data:{labels:sel.map(s=>s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())),datasets:['2015','2022','2025'].map((y,i)=>({label:y,data:sel.map(s=>val[s]?val[s]['n'+y]:null),backgroundColor:['#b9d3d3','#5fa3a3','#0d6e6e'][i]}))},options:{maintainAspectRatio:false}});
+}
+chips.addEventListener('change',e=>{e.target.checked?vsel.add(e.target.value):vsel.delete(e.target.value);drawVal();});drawVal();
+
+// household survey
+const hs=document.getElementById('hh-sel');const hk=Object.keys(hh).sort((a,b)=>hh[b].n-hh[a].n);
+hs.innerHTML=hk.map(k=>'<option value="'+esc(k)+'">'+esc(k)+' ('+hh[k].n+' households)</option>').join('');
+hs.value='Lakeside/Marina da Gama/Westlake';
+let cd,ct,ci;
+function drawHH(){
+  const d=hh[hs.value];document.getElementById('hh-n').textContent=d.n+' households surveyed · average household size '+d.avgSize;
+  const mk=(canvas,arr,old,col,horiz)=>{old&&old.destroy();return new Chart(document.getElementById(canvas),{type:horiz?'bar':'doughnut',data:{labels:arr.map(x=>x[0].replace(/^ +| +$/g,'')),datasets:[{data:arr.map(x=>x[1]),backgroundColor:horiz?col:['#0d6e6e','#c0392b','#e67e22','#2980b9','#8e44ad','#95a5a6','#16a085','#f1c40f']}]},options:{maintainAspectRatio:false,indexAxis:horiz?'y':'x',plugins:{legend:{display:!horiz,position:'bottom',labels:{boxWidth:10,font:{size:10}}}},scales:horiz?{y:{ticks:{autoSkip:false,font:{size:10}}}}:{}}});};
+  cd=mk('ch-dw',d.dwelling,cd);ct=mk('ch-ten',d.tenure,ct);
+  const order=['No income','R1 - R400','R401 - R800','R801 - R1 600','R1 601 - R3 200','R3 201 - R6 400','R6 401 - R12 800','R12 801 - R25 600','R25 601 - R51 200','R51 201 - R102 400','R102 401 - R204 800','R204 801 or more',"Don't know"];
+  const m=Object.fromEntries(d.income.map(x=>[x[0].trim(),x[1]]));
+  const inc=order.map(o=>[o,m[o]||0]).concat(Object.keys(m).filter(k=>!order.includes(k)).map(k=>[k,m[k]]));
+  ci=mk('ch-inc',inc,ci,'#0d6e6e',true);
+}
+hs.addEventListener('change',drawHH);drawHH();
+
+// map of associations
+const map=newMap('map',{focus:'ward'});let gR,gH;
+const rp=D.ratepayers.features,hoa=D.hoa.features;
+gR=L.geoJSON(D.ratepayers,{style:f=>({color:f.properties.w45?'#c0392b':'#2c5aa0',weight:f.properties.w45?2.5:1.2,fillColor:f.properties.w45?'#e74c3c':'#5b8bd0',fillOpacity:f.properties.w45?.25:.12}),onEachFeature:(f,l)=>l.bindPopup('<b>'+esc(f.properties.NME)+'</b><br>'+(f.properties.w45?'Touches Ward 45':'Elsewhere in Subcouncil 19'))}).addTo(map);
+gH=L.geoJSON(D.hoa,{style:f=>({color:'#6a3d9a',weight:1,fillColor:'#b39ddb',fillOpacity:f.properties.w45?.5:.2}),onEachFeature:(f,l)=>l.bindPopup('<b>'+esc(f.properties.NGHB_NAME)+'</b><br>'+esc(f.properties.NGHB_DSCR)+'<br>Master neighbourhood: '+esc(f.properties.MSTR_NGHB))}).addTo(map);
+document.getElementById('c-rp').addEventListener('change',e=>e.target.checked?gR.addTo(map):map.removeLayer(gR));
+document.getElementById('c-hoa').addEventListener('change',e=>e.target.checked?gH.addTo(map):map.removeLayer(gH));
+addLegend(map,'<i class="sq" style="background:#e74c3c"></i>Association touching Ward 45<br><i class="sq" style="background:#5b8bd0"></i>Other association<br><i class="sq" style="background:#b39ddb"></i>Homeowners\' association');
+document.getElementById('rp-w45').innerHTML='<ul style="margin:0;padding-left:18px">'+rp.filter(f=>f.properties.w45).map(f=>'<li>'+esc(f.properties.NME)+'</li>').join('')+'</ul>';
+document.getElementById('rp-other').innerHTML='<ul style="margin:0;padding-left:18px">'+rp.filter(f=>!f.properties.w45).map(f=>'<li>'+esc(f.properties.NME)+'</li>').join('')+'</ul>';
+const hw=hoa.filter(f=>f.properties.w45).sort((a,b)=>String(a.properties.NGHB_NAME).localeCompare(String(b.properties.NGHB_NAME)));
+document.getElementById('hoa-list').innerHTML='<table class="t"><tr><th>Name</th><th>Description</th><th>Type</th><th>Master neighbourhood</th></tr>'+hw.map(f=>'<tr><td>'+esc(f.properties.NGHB_NAME)+'</td><td>'+esc(f.properties.NGHB_DSCR)+'</td><td>'+esc(f.properties.NGHB_TYPE)+'</td><td>'+esc(f.properties.MSTR_NGHB)+'</td></tr>').join('')+'</table>';
+buildFooter('Population: City 2025 suburb estimates. Valuation rolls: general valuation 2012 to 2025.');
+</script>
+</body></html>

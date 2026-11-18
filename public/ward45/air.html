@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Air quality · Ward 45</title>
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<main>
+<h1>Air quality</h1>
+<div class="note"><strong>There is no air quality monitoring station in Ward 45 or anywhere in Subcouncil 19.</strong> The City's network has 12 stations, all north of the False Bay coast. The nearest to Ward 45 is <span id="nearest"></span>. Readings from these stations describe the city's air generally; they are not measurements of Muizenberg's own air.</div>
+
+<div class="toolbar" style="margin-top:14px">
+  <label><strong>Pollutant</strong> <select id="p-sel"></select></label>
+  <span id="p-std" style="color:#5d6b70;font-size:13px"></span>
+</div>
+<div class="grid" style="grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:16px;align-items:start">
+  <div>
+    <div id="map" class="map" style="height:560px"></div>
+    <p style="font-size:12px;color:#5d6b70">Station positions are approximate: the City's data does not include coordinates, so each station is placed at the centre of its suburb. Rings show 10, 20 and 30 km from the centre of Ward 45.</p>
+  </div>
+  <div class="card">
+    <div class="toolbar" id="st-chips"></div>
+    <div class="chart-box" style="height:400px"><canvas id="ch-air"></canvas></div>
+  </div>
+</div>
+
+<h2>Yearly averages</h2>
+<div class="card" style="overflow:auto"><div id="annual"></div></div>
+<p style="font-size:13px;color:#5d6b70">Only years with at least about a quarter of hours measured are shown. "Coverage" is the share of the year with a valid reading. Exceedances count hours or days above the national standard listed above the chart. The data file is titled 2022 to 2024 but includes earlier years for some stations.</p>
+</main>
+
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="data/bounds.js"></script><script src="data/air.js"></script>
+<script src="assets/common.js"></script>
+<script>
+buildHeader('air.html');
+const A=D.air,PO=A.pollutants,ST=A.stations.filter(s=>s.lat!=null);
+const near=ST.slice().sort((a,b)=>a.km-b.km);
+document.getElementById('nearest').innerHTML='<b>'+near.slice(0,3).map(s=>s.name+' ('+s.km+' km)').join('</b>, <b>')+'</b>';
+const map=newMap('map',{sc:true,focus:'ward'});
+const ward=A.ward;
+[10,20,30].forEach(k=>L.circle([ward[1],ward[0]],{radius:k*1000,color:'#888',weight:1,fill:false,dashArray:'4 4'}).addTo(map));
+let psel=document.getElementById('p-sel'),pol='PM10',sel=new Set(near.slice(0,3).map(s=>s.name)),chart,markers={};
+psel.innerHTML=Object.entries(PO).map(([k,v])=>'<option value="'+k+'">'+v.label+'</option>').join('');psel.value=pol;
+const PAL=['#c0392b','#2980b9','#27ae60','#8e44ad','#e67e22','#16a085','#7f8c8d','#d35400','#2c3e50','#f1c40f','#e84393','#1abc9c'];
+const has=(s)=>PO[pol].stations[s.name];
+function chips(){
+  document.getElementById('st-chips').innerHTML='<strong>Stations</strong>'+ST.filter(has).sort((a,b)=>a.km-b.km).map(s=>'<label><input type="checkbox" value="'+esc(s.name)+'"'+(sel.has(s.name)?' checked':'')+'><span style="color:'+PAL[ST.indexOf(s)%12]+'">&#9632;</span> '+esc(s.name)+' <span style="color:#888;font-size:11px">'+s.km+' km</span></label>').join('');
+}
+function drawMap(){
+  Object.values(markers).forEach(m=>map.removeLayer(m));markers={};
+  ST.forEach(s=>{const ok=has(s);const m=L.circleMarker([s.lat,s.lon],{radius:ok?9:6,color:'#222',weight:sel.has(s.name)?3:1,fillColor:ok?PAL[ST.indexOf(s)%12]:'#ccc',fillOpacity:.9}).addTo(map);
+    m.bindTooltip(s.name+' · '+s.km+' km'+(ok?'':' (no '+pol+' data)'),{permanent:ok&&s.km<20,direction:'top',className:''}); markers[s.name]=m;
+    m.on('click',()=>{if(!ok)return;sel.has(s.name)?sel.delete(s.name):sel.add(s.name);chips();draw();});});
+  const b=L.latLngBounds([[ward[1],ward[0]]]);near.slice(0,5).forEach(s=>b.extend([s.lat,s.lon]));map.fitBounds(b.pad(0.2));
+}
+function draw(){
+  const p=PO[pol];document.getElementById('p-std').textContent=p.stdNote;
+  const names=ST.filter(s=>sel.has(s.name)&&p.stations[s.name]);
+  const months=[...new Set(names.flatMap(s=>Object.keys(p.stations[s.name].monthly)))].sort();
+  const ds=names.map(s=>({label:s.name,data:months.map(m=>{const v=p.stations[s.name].monthly[m];return v?v[0]:null;}),borderColor:PAL[ST.indexOf(s)%12],backgroundColor:PAL[ST.indexOf(s)%12],pointRadius:1.5,spanGaps:false,tension:.15}));
+  if(p.annualStd)ds.push({label:'Annual standard ('+p.annualStd+')',data:months.map(()=>p.annualStd),borderColor:'#c0392b',borderDash:[6,4],pointRadius:0});
+  chart&&chart.destroy();
+  chart=new Chart(document.getElementById('ch-air'),{type:'line',data:{labels:months,datasets:ds},options:{maintainAspectRatio:false,scales:{y:{title:{display:true,text:'Monthly average, '+p.unit}},x:{ticks:{maxTicksLimit:10}}},plugins:{legend:{labels:{boxWidth:10,font:{size:11}}}}}});
+  // annual table
+  const yrs=[...new Set(Object.values(p.stations).flatMap(s=>Object.keys(s.annual)))].sort().reverse();
+  document.getElementById('annual').innerHTML='<table class="t"><tr><th>Station</th><th class="num">Distance</th>'+yrs.map(y=>'<th class="num">'+y+'</th>').join('')+'</tr>'+
+   ST.filter(s=>p.stations[s.name]).sort((a,b)=>a.km-b.km).map(s=>'<tr><td>'+esc(s.name)+'</td><td class="num">'+s.km+' km</td>'+yrs.map(y=>{const a=p.stations[s.name].annual[y];if(!a)return '<td class="num" style="color:#bbb">–</td>';const over=p.annualStd&&a[0]>p.annualStd;return '<td class="num" style="'+(over?'color:#c0392b;font-weight:600':'')+'">'+a[0]+'<br><span style="font-size:11px;color:#777">'+a[3]+'% cov · '+a[2]+' '+p.exLabel.split(' ')[0]+'</span></td>';}).join('')+'</tr>').join('')+'</table>';
+}
+psel.addEventListener('change',()=>{pol=psel.value;sel=new Set([...sel].filter(n=>PO[pol].stations[n]));if(!sel.size)near.filter(s=>PO[pol].stations[s.name]).slice(0,3).forEach(s=>sel.add(s.name));chips();drawMap();draw();});
+document.getElementById('st-chips').addEventListener('change',e=>{e.target.checked?sel.add(e.target.value):sel.delete(e.target.value);drawMap();draw();});
+L.marker([ward[1],ward[0]],{icon:L.divIcon({className:'',html:'<div style="background:#c0392b;color:#fff;padding:2px 6px;border-radius:6px;font-size:11px;white-space:nowrap;box-shadow:0 0 4px #0008">Ward 45</div>',iconAnchor:[24,10]})}).addTo(map);
+chips();drawMap();draw();buildFooter('Air quality: City of Cape Town air quality monitoring network, hourly data.');
+</script>
+</body></html>

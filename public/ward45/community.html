@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Community facilities · Ward 45</title>
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<main>
+<h1>Community facilities</h1>
+<p class="lede">Places of worship, parks, recreation hubs, health facilities and City-owned early childhood development (ECD) centres. Switch between Ward 45 only and the whole of Subcouncil 19, and toggle layers on and off.</p>
+
+<div class="toolbar" id="scope">
+  <strong>Show:</strong>
+  <label><input type="radio" name="scope" value="ward" checked> Ward 45 only</label>
+  <label><input type="radio" name="scope" value="sc"> All of Subcouncil 19</label>
+  <span style="width:18px"></span>
+  <label><input type="checkbox" data-l="worship" checked> <span class="pill" style="background:#e8d9f3">Places of worship</span></label>
+  <label><input type="checkbox" data-l="parks" checked> <span class="pill" style="background:#d8efd8">Parks</span></label>
+  <label><input type="checkbox" data-l="rechubs" checked> <span class="pill" style="background:#ffe9c7">Recreation hubs</span></label>
+  <label><input type="checkbox" data-l="health" checked> <span class="pill" style="background:#fbd8d8">Health</span></label>
+  <label><input type="checkbox" data-l="ecd" checked> <span class="pill" style="background:#d9e8fb">ECD centres</span></label>
+</div>
+<div id="map" class="map tall"></div>
+
+<div class="grid g4" id="stats" style="margin-top:16px"></div>
+
+<div class="note" style="margin-top:16px">
+  <strong>Outdoor gyms:</strong> the City lists an "Outdoor gyms" item on the portal, but it is published as a document with no coordinates or download, so it cannot be mapped here. Parks with play equipment are flagged in the park pop-ups as the nearest available proxy.
+</div>
+
+<h2>Lists</h2>
+<div class="grid g2">
+  <div class="card"><h3>Places of worship</h3><div id="l-worship"></div></div>
+  <div class="card"><h3>Health facilities</h3><div id="l-health"></div></div>
+  <div class="card"><h3>Recreation hubs and ECD centres</h3><div id="l-other"></div></div>
+  <div class="card"><h3>Parks in Ward 45</h3><div id="l-parks"></div></div>
+</div>
+</main>
+
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="data/bounds.js"></script>
+<script src="data/worship.js"></script><script src="data/parks.js"></script><script src="data/rechubs.js"></script>
+<script src="data/health.js"></script><script src="data/ecd.js"></script>
+<script src="assets/common.js"></script>
+<script>
+buildHeader('community.html');
+const map=newMap('map',{focus:'ward'});
+const COL={worship:'#8e44ad',rechubs:'#e67e22',health:'#e74c3c',ecd:'#2980b9'};
+const groups={};
+let scope='ward';
+function keep(f){return scope==='sc'||f.properties.w45;}
+function build(){
+  Object.values(groups).forEach(g=>map.removeLayer(g));
+  const on=k=>document.querySelector('[data-l="'+k+'"]').checked;
+  // parks
+  groups.parks=L.geoJSON({type:'FeatureCollection',features:D.parks.features.filter(keep)},{
+    style:{color:'#2e8b57',weight:1,fillColor:'#7ccf8f',fillOpacity:0.55},
+    onEachFeature:(f,l)=>l.bindPopup('<b>'+esc(f.properties.PARK_NAME||'Park')+'</b><br>'+popupRows(f.properties,['ACS_ADR','PLAY_EQPM']))});
+  const pt=(k,fc,name,keys)=>L.geoJSON({type:'FeatureCollection',features:fc.features.filter(keep)},{
+    pointToLayer:(f,ll)=>circle(ll,COL[k],7),
+    onEachFeature:(f,l)=>l.bindPopup('<b>'+esc(f.properties[name]||k)+'</b><br>'+popupRows(f.properties,keys))});
+  groups.worship=pt('worship',D.worship,'NAME',['RLGN_TYPE','BLDG_TYPE','ADR_STRT_NAME','ADR_SBRB']);
+  groups.rechubs=pt('rechubs',D.rechubs,'FCLT_NAME',['FLCT_CTGR','FCLT_RCRT_HUB']);
+  groups.health=pt('health',D.health,'NAME',['ADR','TYPE','CLS']);
+  groups.ecd=pt('ecd',D.ecd,'ECD_NAME',['ADRS','SBRB','STS']);
+  Object.keys(groups).forEach(k=>{if(on(k))groups[k].addTo(map);});
+  map.fitBounds(scope==='sc'?map.__sc.getBounds():map.__ward.getBounds().pad(0.25));
+  stats(); lists();
+}
+function cnt(fc){return [fc.features.filter(f=>f.properties.w45).length,fc.features.length];}
+function stats(){
+  const s=[['Places of worship',D.worship],['Parks',D.parks],['Recreation hubs',D.rechubs],['Health facilities',D.health],['ECD centres',D.ecd]];
+  document.getElementById('stats').innerHTML=s.map(([n,fc])=>{const c=cnt(fc);return statCard(c[0],n+' in Ward 45',c[1]+' in Subcouncil 19');}).join('');
+}
+function list(fc,cols,hdr){
+  const rows=fc.features.filter(keep).sort((a,b)=>String(a.properties[cols[0]]).localeCompare(String(b.properties[cols[0]])));
+  if(!rows.length)return '<p style="color:#777">None in this area.</p>';
+  return '<table class="t"><tr>'+hdr.map(h=>'<th>'+h+'</th>').join('')+'</tr>'+rows.map(f=>'<tr>'+cols.map(c=>'<td>'+esc(f.properties[c])+'</td>').join('')+(scope==='sc'?'':'')+'</tr>').join('')+'</table>';
+}
+function lists(){
+  document.getElementById('l-worship').innerHTML=list(D.worship,['NAME','RLGN_TYPE','ADR_SBRB'],['Name','Faith','Suburb']);
+  document.getElementById('l-health').innerHTML=list(D.health,['NAME','TYPE','ADR'],['Name','Type','Address']);
+  document.getElementById('l-other').innerHTML='<b>Recreation hubs</b>'+list(D.rechubs,['FCLT_NAME','FLCT_CTGR'],['Name','Category'])+'<br><b>ECD centres</b>'+list(D.ecd,['ECD_NAME','SBRB','STS'],['Name','Suburb','Status']);
+  const wp=D.parks.features.filter(f=>f.properties.w45).sort((a,b)=>String(a.properties.PARK_NAME).localeCompare(String(b.properties.PARK_NAME)));
+  document.getElementById('l-parks').innerHTML='<table class="t"><tr><th>Park</th><th>Address</th><th>Play equipment</th></tr>'+wp.map(f=>'<tr><td>'+esc(f.properties.PARK_NAME)+'</td><td>'+esc(f.properties.ACS_ADR)+'</td><td>'+esc(f.properties.PLAY_EQPM)+'</td></tr>').join('')+'</table>';
+}
+document.querySelectorAll('[name=scope]').forEach(r=>r.addEventListener('change',e=>{scope=e.target.value;build();}));
+document.querySelectorAll('[data-l]').forEach(c=>c.addEventListener('change',()=>{const k=c.dataset.l;c.checked?groups[k].addTo(map):map.removeLayer(groups[k]);}));
+addLegend(map,'<i style="background:#8e44ad"></i>Worship<br><i style="background:#e67e22"></i>Recreation hub<br><i style="background:#e74c3c"></i>Health<br><i style="background:#2980b9"></i>ECD<br><i class="sq" style="background:#7ccf8f"></i>Park<br><span style="color:#c0392b">&#9644;</span> Ward 45 &nbsp;<span style="color:#2c5aa0">- -</span> Subcouncil 19');
+build();
+buildFooter();
+</script>
+</body></html>

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fire &amp; emergency incidents · Ward 45</title>
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<main>
+<h1>Fire &amp; emergency incidents</h1>
+<p class="lede">Fire and rescue call-outs for Ward 45's suburbs and the wider Muizenberg area, from the City's incident records for 2009 to 2022. The records carry a suburb and street but no coordinates, so the map shades suburbs by incident count. Four fire stations serve Subcouncil 19; none sits inside Ward 45.</p>
+
+<div class="note" id="gap-note"><strong>Read the trend with care.</strong> Recorded incidents drop sharply after 2018 (see the chart). That looks like incomplete recording in the later file, not a real fall in incidents, so don't treat 2019 to 2022 as a decline.</div>
+
+<div class="toolbar" style="margin-top:14px">
+  <strong>Area:</strong>
+  <label><input type="radio" name="area" value="w45" checked> Ward 45 suburbs</label>
+  <label><input type="radio" name="area" value="all"> Wider Muizenberg area</label>
+  <span style="width:14px"></span>
+  <label>Type <select id="f-type"></select></label>
+  <label>From <select id="f-from"></select></label>
+  <label>To <select id="f-to"></select></label>
+</div>
+<div class="grid g4" id="stats"></div>
+
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><h3>Incidents per year, by type</h3><div class="chart-box"><canvas id="ch-year"></canvas></div></div>
+  <div class="card"><h3>Time of year (all selected years)</h3><div class="chart-box"><canvas id="ch-month"></canvas></div></div>
+</div>
+
+<h2>Map: incidents by suburb</h2>
+<div id="map" class="map tall"></div>
+<p style="font-size:13px;color:#5d6b70">Darker = more incidents in the selected years and type. Marina da Gama uses the residents' association boundary because it is not an official planning suburb. Retreat and Capri have no polygon in Subcouncil 19, so they appear in the charts only.</p>
+
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><h3>By suburb</h3><div class="chart-box" style="height:380px"><canvas id="ch-sub"></canvas></div></div>
+  <div class="card"><h3>Streets with the most incidents</h3><div id="streets" style="max-height:380px;overflow:auto"></div></div>
+</div>
+
+<h2>Fire stations serving Subcouncil 19</h2>
+<div class="card"><div id="stations"></div></div>
+</main>
+
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="data/bounds.js"></script>
+<script src="data/fire.js"></script><script src="data/firestn.js"></script><script src="data/suburbs.js"></script><script src="data/ratepayers.js"></script>
+<script src="assets/common.js"></script>
+<script>
+buildHeader('fire.html');
+const W45=['MUIZENBERG','LAKESIDE','MARINA DA GAMA','VRYGROND','SEAWINDS','LAVENDER HILL','STEENBERG'];
+const TYPES=['Residential fire','Vegetation & rubbish fire','Vehicle fire','Commercial / industrial fire','Road accident','Medical & trauma call','Other call-out'];
+const TCOL=['#c0392b','#e67e22','#8e44ad','#2c3e50','#2980b9','#16a085','#95a5a6'];
+function classify(r){
+  const t=(r[2]+' '+r[3]+' '+r[4]).toUpperCase();
+  if(/RUBBISH|GRASS|BUSH/.test(t))return TYPES[1];
+  if(/MVA|PVA|ACCIDENT/.test(t))return TYPES[4];
+  if(/RESIDENTIAL|FORMAL|INFORMAL|FLAT/.test(t)&&!/MEDICAL/.test(t))return TYPES[0];
+  if(/TRANSPORT|CAR\/MOTORCYCLE|VEHICLE FIRE/.test(t))return TYPES[2];
+  if(/COMMERCIAL|INDUSTR|SHOP|OFFICE|RESTAURANT|GARAGE/.test(t))return TYPES[3];
+  if(/MEDICAL|TRAUMA|CARDIAC|ASSAULT|GUNSHOT|OVERDOSE|UNABLE TO BREATHE|UNRESPONSIVE/.test(t))return TYPES[5];
+  return TYPES[6];
+}
+const ROWS=D.fire.rows.filter(r=>r[0]).map(r=>({date:r[0],y:+r[0].slice(0,4),m:+r[0].slice(5,7),sub:r[1],street:r[5],type:classify(r)})).filter(r=>r.y>=2009&&r.y<=2022);
+const years=[...new Set(ROWS.map(r=>r.y))].sort();
+const fT=document.getElementById('f-type'),fF=document.getElementById('f-from'),fTo=document.getElementById('f-to');
+fT.innerHTML='<option value="">All types</option>'+TYPES.map(t=>'<option>'+t+'</option>').join('');
+fF.innerHTML=years.map(y=>'<option>'+y+'</option>').join('');fTo.innerHTML=years.map(y=>'<option>'+y+'</option>').join('');
+fF.value=years[0];fTo.value=years[years.length-1];
+let area='w45';
+function sel(){return ROWS.filter(r=>(area==='all'||W45.includes(r.sub))&&(!fT.value||r.type===fT.value)&&r.y>=+fF.value&&r.y<=+fTo.value);}
+const map=newMap('map',{focus:'ward'});
+const subPoly=L.layerGroup().addTo(map);
+function shade(n,max){const t=max?Math.min(1,n/max):0;const a=[254,240,217],b=[179,0,0];return 'rgb('+a.map((x,i)=>Math.round(x+(b[i]-x)*t)).join(',')+')';}
+const polys=[];
+D.suburbs.features.forEach(f=>polys.push({name:f.properties.OFC_SBRB_NAME.toUpperCase(),geom:f.geometry}));
+D.ratepayers.features.filter(f=>/marina da gama/i.test(f.properties.NME)).forEach(f=>polys.push({name:'MARINA DA GAMA',geom:f.geometry}));
+const stIcon=L.divIcon({className:'',html:'<div style="background:#c0392b;color:#fff;border-radius:6px;padding:1px 5px;font-size:11px;border:1px solid #fff;box-shadow:0 0 4px #0008">&#9650;</div>',iconSize:[18,18]});
+D.firestn.features.forEach(f=>L.marker([f.geometry.coordinates[1],f.geometry.coordinates[0]],{icon:stIcon,zIndexOffset:900}).addTo(map).bindPopup('<b>'+esc(f.properties.FIRE_STN_NAME)+' fire station</b><br>'+esc(f.properties.FIRE_STN_CLASS)));
+let charts={};
+function draw(){
+  const rows=sel(); const bySub={};rows.forEach(r=>bySub[r.sub]=(bySub[r.sub]||0)+1);
+  const max=Math.max(1,...Object.values(bySub));
+  subPoly.clearLayers();
+  polys.forEach(p=>{const n=bySub[p.name]||0;const inScope=area==='all'||W45.includes(p.name);
+    L.geoJSON({type:'Feature',geometry:p.geom},{style:{color:inScope?'#333':'#aaa',weight:inScope?1.5:.7,fillColor:inScope?shade(n,max):'#eee',fillOpacity:inScope?.7:.25}}).addTo(subPoly)
+     .bindTooltip('<b>'+p.name.replace(/\b\w/g,c=>c)+'</b><br>'+n+' incidents',{sticky:true});});
+  // stats
+  const yrs=+fTo.value-+fF.value+1;const byT={};rows.forEach(r=>byT[r.type]=(byT[r.type]||0)+1);
+  const top=Object.entries(byT).sort((a,b)=>b[1]-a[1])[0];const topS=Object.entries(bySub).sort((a,b)=>b[1]-a[1])[0];
+  const byM=Array(12).fill(0);rows.forEach(r=>byM[r.m-1]++);const mi=byM.indexOf(Math.max(...byM));
+  document.getElementById('stats').innerHTML=statCard(fmt(rows.length),'incidents in selection',yrs+' year'+(yrs>1?'s':''))+
+    statCard(top?top[0]:'n/a','most common type',top?top[1]+' incidents':'')+statCard(topS?topS[0].toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()):'n/a','busiest suburb',topS?topS[1]+' incidents':'')+
+    statCard(rows.length?['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mi]:'n/a','busiest month');
+  // year chart
+  const ys=years.filter(y=>y>=+fF.value&&y<=+fTo.value);
+  const ds=TYPES.map((t,i)=>({label:t,backgroundColor:TCOL[i],data:ys.map(y=>rows.filter(r=>r.y===y&&r.type===t).length)}));
+  charts.y&&charts.y.destroy();charts.y=new Chart(document.getElementById('ch-year'),{type:'bar',data:{labels:ys,datasets:ds},options:{scales:{x:{stacked:true},y:{stacked:true}},maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}}});
+  charts.m&&charts.m.destroy();charts.m=new Chart(document.getElementById('ch-month'),{type:'bar',data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],datasets:TYPES.map((t,i)=>({label:t,backgroundColor:TCOL[i],data:Array.from({length:12},(_,m)=>rows.filter(r=>r.m===m+1&&r.type===t).length)}))},options:{scales:{x:{stacked:true},y:{stacked:true}},maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+  const bs=Object.entries(bySub).sort((a,b)=>b[1]-a[1]);
+  charts.s&&charts.s.destroy();charts.s=new Chart(document.getElementById('ch-sub'),{type:'bar',data:{labels:bs.map(x=>x[0].toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())),datasets:[{data:bs.map(x=>x[1]),backgroundColor:bs.map(x=>W45.includes(x[0])?'#c0392b':'#9fb8b8')}]},options:{indexAxis:'y',plugins:{legend:{display:false}},maintainAspectRatio:false}});
+  const st={};rows.forEach(r=>{if(r.street){const k=r.street+' ('+r.sub.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())+')';st[k]=(st[k]||0)+1;}});
+  document.getElementById('streets').innerHTML='<table class="t"><tr><th>Street</th><th class="num">Incidents</th></tr>'+Object.entries(st).sort((a,b)=>b[1]-a[1]).slice(0,25).map(x=>'<tr><td>'+esc(x[0])+'</td><td class="num">'+x[1]+'</td></tr>').join('')+'</table>';
+}
+document.querySelectorAll('[name=area]').forEach(r=>r.addEventListener('change',e=>{area=e.target.value;draw();}));
+[fT,fF,fTo].forEach(e=>e.addEventListener('change',draw));
+document.getElementById('stations').innerHTML='<table class="t"><tr><th>Station</th><th>Class</th><th>In Ward 45?</th></tr>'+D.firestn.features.map(f=>'<tr><td>'+esc(f.properties.FIRE_STN_NAME)+'</td><td>'+esc(f.properties.FIRE_STN_CLASS)+'</td><td>'+(f.properties.w45?'Yes':'No')+'</td></tr>').join('')+'</table>';
+addLegend(map,'<span style="color:#c0392b">&#9650;</span> Fire station<br><i class="sq" style="background:rgb(254,240,217)"></i>fewer<br><i class="sq" style="background:rgb(179,0,0)"></i>more incidents');
+draw();buildFooter('Fire incident records cover 2009 to 2022; suburb names were cleaned and grouped by hand.');
+</script>
+</body></html>

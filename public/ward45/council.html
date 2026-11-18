@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Subcouncil 19 · Ward 45</title>
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<main>
+<h1>Subcouncil 19: budget, planning &amp; arrears</h1>
+<p class="lede">Ward 45 sits almost entirely within Subcouncil 19, which stretches from Muizenberg and Lakeside south through Fish Hoek, Simon's Town, Ocean View, Kommetjie and Noordhoek. This page covers the subcouncil's operating budget allocation, the planning designations on the map, and municipal arrears.</p>
+<div class="note"><strong>What's in the portal and what isn't.</strong> The open data has no subcouncil meeting minutes, agendas or plans. Those sit in the City's council calendar and document centre. The budget figures below come from the City's published budget annexures, not the portal.</div>
+
+<h2>Operating budget allocation</h2>
+<div class="grid g2">
+  <div class="card"><h3>Projects supported by Subcouncil 19</h3><div id="bud-table"></div>
+    <p style="font-size:12px;color:#5d6b70">Source: City of Cape Town budget annexures (2023/24 Annexure 38; 2024/25 Annexure 33). Every subcouncil receives R1.9 million a year under this heading. These are the subcouncil-supported operating projects only, not all City spending in the area, and the annexures do not split amounts by ward.</p></div>
+  <div class="card"><h3>How the R1.9 million is planned to be used</h3><div class="chart-box"><canvas id="ch-bud"></canvas></div></div>
+</div>
+
+<h2>Planning map</h2>
+<div class="toolbar">
+  <label><input type="radio" name="scope" value="ward" checked> Ward 45 only</label>
+  <label><input type="radio" name="scope" value="sc"> All of Subcouncil 19</label>
+  <span style="width:14px"></span>
+  <label><input type="checkbox" data-l="transform" checked> Spatial transformation areas</label>
+  <label><input type="checkbox" data-l="newdev" checked> New development areas</label>
+  <label><input type="checkbox" data-l="mixeduse" checked> Mixed-use intensification</label>
+  <label><input type="checkbox" data-l="nodes" checked> Nodes</label>
+  <label><input type="checkbox" data-l="overlay" checked> Local area overlays</label>
+  <label><input type="checkbox" data-l="envfocus"> Environmental focus areas</label>
+  <label><input type="checkbox" data-l="urbanedge"> Urban edge</label>
+</div>
+<div id="map" class="map tall"></div>
+<div class="grid g3" style="margin-top:16px">
+  <div class="card"><h3>Nodes</h3><div id="l-nodes"></div></div>
+  <div class="card"><h3>Spatial transformation and growth areas</h3><div id="l-transform"></div></div>
+  <div class="card"><h3>Overlays, focus areas and development</h3><div id="l-other"></div></div>
+</div>
+<div class="note info" style="margin-top:14px"><strong>Zoning applications</strong> and the zoning layer itself are published by the City, but individual applications are not in the portal. The zoning polygons (7,521 touch Ward 45) are too many to map usefully here; split-zoned parcels (113 touch Ward 45) are in the data catalogue.</div>
+
+<h2>Municipal arrears, Subcouncil 19</h2>
+<div class="grid g2">
+  <div class="card"><h3>Total arrears over time</h3><div class="chart-box"><canvas id="ch-ar"></canvas></div><p style="font-size:12px;color:#5d6b70" id="ar-note"></p></div>
+  <div class="card"><h3>How old the debt is (latest month)</h3><div class="chart-box"><canvas id="ch-age"></canvas></div></div>
+</div>
+
+<h2>Ward 45 compared with the whole subcouncil</h2>
+<p class="lede">Features that touch Ward 45, and the total across Subcouncil 19. This includes things that matter to the subcouncil but fall outside the ward, such as the fire stations.</p>
+<div class="card"><div id="cmp"></div></div>
+</main>
+
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="data/bounds.js"></script>
+<script src="data/people.js"></script>
+<script src="data/transform.js"></script><script src="data/newdev.js"></script><script src="data/mixeduse.js"></script><script src="data/nodes.js"></script><script src="data/overlay.js"></script><script src="data/envfocus.js"></script><script src="data/urbanedge.js"></script>
+<script src="data/firestn.js"></script><script src="data/health.js"></script><script src="data/ecd.js"></script><script src="data/worship.js"></script><script src="data/parks.js"></script><script src="data/rechubs.js"></script><script src="data/wqsites.js"></script><script src="data/trading.js"></script><script src="data/beats.js"></script><script src="data/taxi.js"></script><script src="data/hoa.js"></script><script src="data/ratepayers.js"></script><script src="data/speedbumps.js"></script><script src="data/pedcross.js"></script><script src="data/wetlands.js"></script><script src="data/watercourses.js"></script>
+<script src="assets/common.js"></script>
+<script>
+buildHeader('council.html');
+// ---- budget (from published annexures) ----
+const BUD=[
+ {y:'2023/24',item:'Green Jobs - Subcouncil 19',dept:'Environmental Management',amt:700000},
+ {y:'2023/24',item:'Park Maintenance - SC19 Area 1',dept:'Recreation & Parks',amt:400000},
+ {y:'2023/24',item:'Park Maintenance - SC19 Area 2',dept:'Recreation & Parks',amt:200000},
+ {y:'2023/24',item:'Road Markings - SC19 District 1',dept:'Roads Infrastructure Management',amt:400000},
+ {y:'2023/24',item:'Road Markings - SC19 District 2',dept:'Roads Infrastructure Management',amt:200000},
+ {y:'2024/25',item:'Green Jobs - Subcouncil 19',dept:'Environmental Management',amt:1900000},
+ {y:'2025/26 (planned)',item:'Unallocated amount - Subcouncil 19',dept:'Citizen Interface',amt:1900000},
+ {y:'2026/27 (planned)',item:'Unallocated amount - Subcouncil 19',dept:'Citizen Interface',amt:1900000}];
+const R=n=>'R'+n.toLocaleString('en-ZA');
+document.getElementById('bud-table').innerHTML='<table class="t"><tr><th>Year</th><th>Project</th><th>Department</th><th class="num">Amount</th></tr>'+BUD.map(b=>'<tr><td>'+b.y+'</td><td>'+b.item+'</td><td>'+b.dept+'</td><td class="num">'+R(b.amt)+'</td></tr>').join('')+'</table>';
+const depts=[...new Set(BUD.map(b=>b.dept))],yrs=[...new Set(BUD.map(b=>b.y))],DC=['#2e8b57','#2980b9','#e67e22','#95a5a6'];
+new Chart(document.getElementById('ch-bud'),{type:'bar',data:{labels:yrs,datasets:depts.map((d,i)=>({label:d,backgroundColor:DC[i],data:yrs.map(y=>BUD.filter(b=>b.y===y&&b.dept===d).reduce((a,b)=>a+b.amt,0))}))},options:{scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>'R'+(v/1e6).toFixed(1)+'m'}}},maintainAspectRatio:false,plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': '+R(c.parsed.y)}},legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}}});
+
+// ---- planning map ----
+const map=newMap('map',{focus:'ward'});let scope='ward';const G={};
+const keep=f=>scope==='sc'||f.properties.w45;
+const ST={
+ transform:{style:f=>({color:'#444',weight:1,fillColor:({'Critical Natural Asset':'#4daf4a','Incremental Growth and Consolidation Area':'#ff7f00','Discouraged Growth Area':'#e41a1c','Urban Inner Core':'#377eb8'})[f.properties.ZONE]||'#999',fillOpacity:.4}),pop:['ZONE','AREA_HCTR'],t:p=>p.ZONE},
+ newdev:{style:{color:'#8e44ad',weight:2,fillColor:'#b07cc6',fillOpacity:.45},pop:['TYPE','AREA_HCTR'],t:p=>'New development area'},
+ mixeduse:{style:{color:'#d35400',weight:2,fillColor:'#f39c5a',fillOpacity:.5},pop:['AREA_HCTR'],t:p=>'Mixed-use intensification area'},
+ nodes:{style:f=>({color:'#c0392b',weight:2,fillColor:'#e74c3c',fillOpacity:.45}),pop:['TYPE'],t:p=>p.NAME},
+ overlay:{style:{color:'#16a085',weight:2,fillColor:'#48c9b0',fillOpacity:.3,dashArray:'4 3'},pop:['TLT','LYR_NM','EXT'],t:p=>p.LYR_NM},
+ envfocus:{style:{color:'#1e8449',weight:2,fillColor:'#82e0aa',fillOpacity:.3},pop:['DSCR','AREA_HCTR'],t:p=>p.NAME},
+ urbanedge:{style:{color:'#2c3e50',weight:2,fill:false,dashArray:'8 5'},pop:['DSCR'],t:p=>'Urban development edge'}};
+function build(){
+  Object.values(G).forEach(g=>map.removeLayer(g));
+  Object.keys(ST).forEach(k=>{
+    G[k]=L.geoJSON({type:'FeatureCollection',features:D[k].features.filter(keep)},{style:ST[k].style,onEachFeature:(f,l)=>l.bindPopup('<b>'+esc(ST[k].t(f.properties))+'</b><br>'+popupRows(f.properties,ST[k].pop))});
+    if(document.querySelector('[data-l='+k+']').checked)G[k].addTo(map);});
+  map.fitBounds(scope==='sc'?map.__sc.getBounds():map.__ward.getBounds().pad(0.25));
+  lists();
+}
+document.querySelectorAll('[name=scope]').forEach(r=>r.addEventListener('change',e=>{scope=e.target.value;build();}));
+document.querySelectorAll('[data-l]').forEach(c=>c.addEventListener('change',()=>c.checked?G[c.dataset.l].addTo(map):map.removeLayer(G[c.dataset.l])));
+function ul(items){return items.length?'<ul style="margin:0;padding-left:18px">'+items.map(i=>'<li>'+i+'</li>').join('')+'</ul>':'<p style="color:#777">None in this area.</p>';}
+function lists(){
+  const nd=D.nodes.features.filter(keep).map(f=>f.properties);
+  document.getElementById('l-nodes').innerHTML=ul(nd.sort((a,b)=>a.NAME.localeCompare(b.NAME)).map(p=>'<b>'+esc(p.NAME)+'</b> <span class="pill">'+esc(p.TYPE)+'</span>'));
+  const tz={};D.transform.features.filter(keep).forEach(f=>{const k=f.properties.ZONE;tz[k]=(tz[k]||{n:0,ha:0});tz[k].n++;tz[k].ha+=f.properties.AREA_HCTR||0;});
+  document.getElementById('l-transform').innerHTML=ul(Object.entries(tz).map(([k,o])=>'<b>'+esc(k)+'</b>: '+o.n+' area'+(o.n>1?'s':'')+', '+o.ha.toFixed(0)+' ha'));
+  const ov=[...new Set(D.overlay.features.filter(keep).map(f=>f.properties.TLT+': '+f.properties.LYR_NM))];
+  const nd2=D.newdev.features.filter(keep).length,mu=D.mixeduse.features.filter(keep).length;
+  document.getElementById('l-other').innerHTML=ul([...ov.map(esc),...D.envfocus.features.filter(keep).map(f=>'Environmental focus area: '+esc(f.properties.NAME)),'New development areas: '+nd2,'Mixed-use intensification areas: '+mu,'Urban edge areas: '+D.urbanedge.features.filter(keep).length]);
+}
+addLegend(map,'<b>Growth areas</b><br><i class="sq" style="background:#4daf4a"></i>Critical natural asset<br><i class="sq" style="background:#ff7f00"></i>Incremental growth<br><i class="sq" style="background:#e41a1c"></i>Discouraged growth<br><i class="sq" style="background:#b07cc6"></i>New development<br><i class="sq" style="background:#f39c5a"></i>Mixed-use<br><i class="sq" style="background:#e74c3c"></i>Node');
+build();
+
+// ---- arrears ----
+const A=D.people.arrearsSeries.slice();
+const med=A.map(a=>a[1]).sort((x,y)=>x-y)[Math.floor(A.length/2)];
+const clean=A.filter(a=>a[1]>0.3*med);
+document.getElementById('ar-note').textContent=(A.length-clean.length)?(A.length-clean.length)+' month with an implausibly low value (a data error in the source) is left out.':'';
+new Chart(document.getElementById('ch-ar'),{type:'line',data:{labels:clean.map(a=>a[0].slice(0,7)),datasets:[{label:'Arrears, Subcouncil 19 (R)',data:clean.map(a=>a[1]),borderColor:'#c0392b',backgroundColor:'#c0392b',pointRadius:1.5,yAxisID:'y'},{label:'Share of city total (%)',data:clean.map(a=>+(100*a[1]/a[2]).toFixed(2)),borderColor:'#2980b9',pointRadius:0,borderDash:[4,3],yAxisID:'y2'}]},
+  options:{maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>'R'+(v/1e6).toFixed(0)+'m'}},y2:{position:'right',grid:{display:false},ticks:{callback:v=>v+'%'}},x:{ticks:{maxTicksLimit:8}}}}});
+const ag=D.people.arrearsAgeing['19'],K=D.people.ageKeys;
+const bucket=(ks)=>ks.reduce((a,k)=>a+(ag[k]||0),0);
+const BK=[['Current (0 to 29 days)',['C_0_29']],['30 to 89 days',['D_30_59','E_60_89']],['90 to 179 days',['F_90_119','G_120_149','H_150_179']],['180 to 364 days',['I_180_364']],['1 to 2 years',['J_365_729']],['2 to 3 years',['K_730_1094']],['Over 3 years',['L_1095_1459','M_1460_1824','N_1825_2189','O_2190_2554','P_2555_2919','Q_2920_3284','R___3285']]];
+new Chart(document.getElementById('ch-age'),{type:'bar',data:{labels:BK.map(b=>b[0]),datasets:[{label:'Rand owed, '+D.people.arrearsLatest,data:BK.map(b=>bucket(b[1])),backgroundColor:'#0d6e6e'}]},options:{indexAxis:'y',maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>R(Math.round(c.parsed.x))}}},scales:{x:{ticks:{callback:v=>'R'+(v/1e6).toFixed(0)+'m'}}}}});
+
+// ---- comparison ----
+const CMP=[['Places of worship','worship'],['Parks','parks'],['Recreation hubs','rechubs'],['Health facilities','health'],['ECD centres','ecd'],['Fire stations','firestn'],['Water-quality sites','wqsites'],['Informal trading bays','trading'],['Refuse collection beats','beats'],['Taxi routes','taxi'],['Ratepayers associations','ratepayers'],['Homeowners associations','hoa'],['Speed bumps','speedbumps'],['Pedestrian crossings','pedcross'],['Wetlands','wetlands'],['Watercourses','watercourses'],['Nodes','nodes'],['New development areas','newdev'],['Mixed-use intensification areas','mixeduse']];
+document.getElementById('cmp').innerHTML='<table class="t"><tr><th>Layer</th><th class="num">Ward 45</th><th class="num">Subcouncil 19</th><th class="num">Ward share</th></tr>'+CMP.map(([n,k])=>{const t=D[k].features.length,w=D[k].features.filter(f=>f.properties.w45).length;return '<tr><td>'+n+'</td><td class="num">'+w+'</td><td class="num">'+t+'</td><td class="num">'+(t?Math.round(100*w/t)+'%':'')+'</td></tr>';}).join('')+'</table>'+
+ '<p style="font-size:13px;margin-top:10px"><b>Fire stations in Subcouncil 19:</b> '+D.firestn.features.map(f=>esc(f.properties.FIRE_STN_NAME)).join(', ')+'. <b>Health facilities:</b> '+D.health.features.map(f=>esc(f.properties.NAME)).join(', ')+'.</p>';
+buildFooter('Budget figures: City of Cape Town budget annexures.');
+</script>
+</body></html>

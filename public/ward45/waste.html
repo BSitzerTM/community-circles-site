@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Refuse &amp; recycling · Ward 45</title>
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<main>
+<h1>Refuse collection &amp; recycling</h1>
+<p class="lede">Collection beats are shaded by collection day. Click a beat for its number, day and service provider. Below the map: the Think Twice recycling contractor for the area, and the City's list of private recyclers in Ward 45's suburbs and the wider Muizenberg area.</p>
+
+<div class="toolbar">
+  <strong>Show:</strong>
+  <label><input type="radio" name="scope" value="ward" checked> Ward 45 only</label>
+  <label><input type="radio" name="scope" value="sc"> All of Subcouncil 19</label>
+  <span style="width:18px"></span>
+  <label><input type="checkbox" id="c-beats" checked> Collection beats</label>
+  <label><input type="checkbox" id="c-tt" checked> Think Twice recycling area</label>
+  <label><input type="checkbox" id="c-lf" checked> Landfill / transfer stations</label>
+</div>
+<div id="map" class="map tall"></div>
+
+<div class="grid g4" id="stats" style="margin-top:16px"></div>
+
+<h2>Collection beats in Ward 45</h2>
+<div class="grid g2">
+  <div class="card"><div id="beat-table"></div></div>
+  <div class="card"><h3>Think Twice recycling</h3><div id="tt-info"></div></div>
+</div>
+
+<h2>Private recyclers and buy-back centres</h2>
+<p class="lede" id="rec-lede"></p>
+<div class="grid g2">
+  <div class="card"><h3>Recyclers by suburb</h3><div class="chart-box"><canvas id="ch-sub"></canvas></div></div>
+  <div class="card"><h3>Services offered (Ward 45 suburbs)</h3><div class="chart-box"><canvas id="ch-cat"></canvas></div></div>
+</div>
+<div class="card" style="margin-top:16px">
+  <div class="toolbar">
+    <label>Suburb <select id="f-sub"></select></label>
+    <label>Material / service <select id="f-cat"></select></label>
+    <label>Search <input id="f-q" type="search" placeholder="name or street" style="padding:4px 8px"></label>
+    <span id="f-count" style="color:#5d6b70"></span>
+  </div>
+  <div style="max-height:520px;overflow:auto"><table class="t" id="rec-table"></table></div>
+</div>
+<div class="note info" style="margin-top:16px">The recycler list has no coordinates, so it is shown by suburb only. Each recycler appears once, with all the materials it takes.</div>
+</main>
+
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="data/bounds.js"></script>
+<script src="data/beats.js"></script><script src="data/thinktwice.js"></script><script src="data/landfill.js"></script>
+<script src="data/recyclers.js"></script>
+<script src="assets/common.js"></script>
+<script>
+buildHeader('waste.html');
+const map=newMap('map',{focus:'ward'});
+const DAY={Monday:'#e41a1c',Tuesday:'#377eb8',Wednesday:'#4daf4a',Thursday:'#ff7f00',Friday:'#984ea3'};
+let scope='ward',gBeats,gTT,gLF;
+const keep=f=>scope==='sc'||f.properties.w45;
+function dayColor(d){const k=String(d||'').split(/[ ,\/]/)[0];const c=Object.keys(DAY).find(x=>x.toUpperCase()===k.toUpperCase());return c?DAY[c]:'#7f7f7f';}
+function build(){
+  [gBeats,gTT,gLF].forEach(g=>g&&map.removeLayer(g));
+  gBeats=L.geoJSON({type:'FeatureCollection',features:D.beats.features.filter(keep)},{
+    style:f=>({color:'#333',weight:1,fillColor:dayColor(f.properties.CLTN_DAY),fillOpacity:.45}),
+    onEachFeature:(f,l)=>l.bindPopup('<b>Beat '+esc(f.properties.CRNT_CLTN_BEAT_NMBR)+'</b><br>'+popupRows(f.properties,['CLTN_DAY','ABSD_NAME','WET_SRVC_PRVD','WET_TNDR_AREA_NAME','SW_SRVC_AREA']))});
+  gTT=L.geoJSON({type:'FeatureCollection',features:D.thinktwice.features.filter(keep)},{
+    style:{color:'#0d6e6e',weight:3,fill:false,dashArray:'2 6'},
+    onEachFeature:(f,l)=>l.bindPopup('<b>Think Twice</b><br>'+popupRows(f.properties,['TNDR','Type','CNTR','CNT_NMBR','EMAIL']))});
+  gLF=L.geoJSON({type:'FeatureCollection',features:D.landfill.features.filter(keep)},{
+    pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:9,color:'#222',weight:1,fillColor:'#6b4f2a',fillOpacity:.9}),
+    onEachFeature:(f,l)=>l.bindPopup(popupRows(f.properties,Object.keys(f.properties)))});
+  if(document.getElementById('c-beats').checked)gBeats.addTo(map);
+  if(document.getElementById('c-tt').checked)gTT.addTo(map);
+  if(document.getElementById('c-lf').checked)gLF.addTo(map);
+  map.fitBounds(scope==='sc'?map.__sc.getBounds():map.__ward.getBounds().pad(0.25));
+}
+document.querySelectorAll('[name=scope]').forEach(r=>r.addEventListener('change',e=>{scope=e.target.value;build();}));
+[['c-beats',()=>gBeats],['c-tt',()=>gTT],['c-lf',()=>gLF]].forEach(([id,g])=>document.getElementById(id).addEventListener('change',e=>e.target.checked?g().addTo(map):map.removeLayer(g())));
+addLegend(map,Object.entries(DAY).map(([d,c])=>'<i class="sq" style="background:'+c+'"></i>'+d).join('<br>')+'<br><span style="color:#0d6e6e">&middot;&middot;&middot;</span> Think Twice area');
+
+// stats and beat table
+const wb=D.beats.features.filter(f=>f.properties.w45);
+const days=[...new Set(wb.map(f=>f.properties.CLTN_DAY))];
+document.getElementById('stats').innerHTML=
+  statCard(wb.length,'Collection beats touching Ward 45',D.beats.features.length+' in Subcouncil 19')+
+  statCard(days.join(', ')||'n/a','Collection days in Ward 45')+
+  statCard(D.thinktwice.features.filter(f=>f.properties.w45).length,'Think Twice areas in Ward 45')+
+  statCard(D.landfill.features.filter(f=>f.properties.w45).length,'Landfill / transfer stations at Ward 45');
+document.getElementById('beat-table').innerHTML='<table class="t"><tr><th>Beat</th><th>Day</th><th>Area</th><th>Provider</th></tr>'+
+  wb.sort((a,b)=>String(a.properties.CRNT_CLTN_BEAT_NMBR).localeCompare(String(b.properties.CRNT_CLTN_BEAT_NMBR),undefined,{numeric:true})).map(f=>'<tr><td>'+esc(f.properties.CRNT_CLTN_BEAT_NMBR)+'</td><td><span class="pill" style="background:'+dayColor(f.properties.CLTN_DAY)+'33">'+esc(f.properties.CLTN_DAY)+'</span></td><td>'+esc(f.properties.ABSD_NAME)+'</td><td>'+esc(f.properties.WET_SRVC_PRVD)+'</td></tr>').join('')+'</table>';
+const tt=D.thinktwice.features.filter(f=>f.properties.w45).map(f=>f.properties);
+document.getElementById('tt-info').innerHTML=tt.length?tt.map(p=>'<p><b>'+esc(p.TNDR)+'</b><br>Service type: '+esc(p.Type)+'<br>Contractor: <b>'+esc(p.CNTR)+'</b><br>Phone: '+esc(p.CNT_NMBR)+'<br>Email: '+esc(p.EMAIL)+'</p>').join(''):'<p>No Think Twice area records touch Ward 45.</p>';
+
+// recyclers
+const R=D.recyclers.list;
+const W45SUBS=['MUIZENBERG','LAKESIDE','MARINA DA GAMA','VRYGROND','SEAWINDS','LAVENDER HILL','STEENBERG'];
+const w45n=R.filter(r=>W45SUBS.includes(r.suburb)).length;document.getElementById('rec-lede').textContent=D.recyclers.list.length+' recyclers are listed across '+Object.keys(D.recyclers.bySuburb).length+' suburbs in and around Subcouncil 19. Among the suburbs that touch Ward 45, only Muizenberg has listings ('+w45n+'); Lakeside, Marina da Gama, Steenberg and the others have none listed, so residents there rely on recyclers based elsewhere or on the Think Twice service.';
+const bs=Object.entries(D.recyclers.bySuburb).sort((a,b)=>b[1]-a[1]);
+new Chart(document.getElementById('ch-sub'),{type:'bar',data:{labels:bs.map(x=>x[0]),datasets:[{data:bs.map(x=>x[1]),backgroundColor:bs.map(x=>W45SUBS.includes(x[0])?'#c0392b':'#9fb8b8')}]},options:{indexAxis:'y',plugins:{legend:{display:false}},maintainAspectRatio:false}});
+const catCount={};R.filter(r=>W45SUBS.includes(r.suburb)).forEach(r=>r.cats.forEach(c=>catCount[c]=(catCount[c]||0)+1));
+const cc=Object.entries(catCount).sort((a,b)=>b[1]-a[1]).slice(0,12);
+new Chart(document.getElementById('ch-cat'),{type:'bar',data:{labels:cc.map(x=>x[0]),datasets:[{data:cc.map(x=>x[1]),backgroundColor:'#0d6e6e'}]},options:{indexAxis:'y',plugins:{legend:{display:false}},maintainAspectRatio:false}});
+const fs=document.getElementById('f-sub'),fc=document.getElementById('f-cat'),fq=document.getElementById('f-q');
+fs.innerHTML='<option value="">All suburbs</option><option value="__w45">Ward 45 suburbs only</option>'+bs.map(x=>'<option>'+esc(x[0])+'</option>').join('');
+fs.value='__w45';
+const allCats=[...new Set(R.flatMap(r=>r.cats))].sort();
+fc.innerHTML='<option value="">All services</option>'+allCats.map(c=>'<option>'+esc(c)+'</option>').join('');
+function tbl(){
+  const q=fq.value.toLowerCase();
+  const rows=R.filter(r=>(fs.value===''||(fs.value==='__w45'?W45SUBS.includes(r.suburb):r.suburb===fs.value))&&(!fc.value||r.cats.includes(fc.value))&&(!q||(r.name+' '+r.street).toLowerCase().includes(q)));
+  document.getElementById('f-count').textContent=rows.length+' recyclers';
+  document.getElementById('rec-table').innerHTML='<tr><th>Recycler</th><th>Suburb</th><th>Address</th><th>Contact</th><th>Takes</th></tr>'+rows.slice(0,400).map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(r.suburb)+'</td><td>'+esc(r.street)+'</td><td>'+esc([r.phone,r.email].filter(Boolean).join(' · '))+'</td><td style="font-size:12px">'+esc(r.subs.slice(0,8).join(', ')+(r.subs.length>8?' +'+(r.subs.length-8)+' more':''))+'</td></tr>').join('');
+}
+[fs,fc].forEach(e=>e.addEventListener('change',tbl));fq.addEventListener('input',tbl);
+build();tbl();buildFooter();
+</script>
+</body></html>

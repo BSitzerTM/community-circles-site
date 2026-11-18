@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Traffic, crashes &amp; taxis · Ward 45</title>
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<main>
+<h1>Traffic crashes &amp; taxi routes</h1>
+<p class="lede">Reported road crashes from 2019 to 2024 in the police precincts around Ward 45. Crash records carry road names but no coordinates, so crashes are matched to the City's road centrelines by name: roads are shaded by how many crashes were recorded on them, and busy intersections are marked where two named roads meet.</p>
+<div class="note" id="match-note"></div>
+
+<div class="toolbar" style="margin-top:14px">
+  <label><strong>Police precincts</strong>
+    <select id="f-st">
+      <option value="w45">Muizenberg + Steenberg (Ward 45 area)</option>
+      <option value="Muizenberg SAPS">Muizenberg SAPS</option>
+      <option value="Steenberg SAPS">Steenberg SAPS</option>
+      <option value="Fish Hoek SAPS">Fish Hoek SAPS</option>
+      <option value="OCEAN VIEW SAPS">Ocean View SAPS</option>
+      <option value="Simons Town Saps">Simon's Town SAPS</option>
+      <option value="all">All five (Subcouncil 19)</option>
+    </select></label>
+  <label>From <select id="f-from"></select></label>
+  <label>To <select id="f-to"></select></label>
+  <span style="width:10px"></span>
+  <label><input type="checkbox" id="c-taxi"> Taxi routes</label>
+  <label><input type="checkbox" id="c-bumps"> Speed bumps</label>
+  <label><input type="checkbox" id="c-ped"> Pedestrian crossings</label>
+</div>
+<div class="grid g4" id="stats"></div>
+<div id="map" class="map tall" style="margin-top:16px"></div>
+
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><h3>Crashes per year</h3><div class="chart-box"><canvas id="ch-year"></canvas></div></div>
+  <div class="card"><h3>Time of day</h3><div class="chart-box"><canvas id="ch-hour"></canvas></div></div>
+  <div class="card"><h3>Day of week</h3><div class="chart-box"><canvas id="ch-wk"></canvas></div></div>
+  <div class="card"><h3>Most common recorded causes</h3><div class="chart-box"><canvas id="ch-cause"></canvas></div></div>
+</div>
+
+<h2>Hotspots</h2>
+<div class="grid g2">
+  <div class="card"><h3>Roads with the most crashes</h3><div id="roads" style="max-height:460px;overflow:auto"></div></div>
+  <div class="card"><h3>Busiest intersections</h3><div id="ints" style="max-height:460px;overflow:auto"></div></div>
+</div>
+
+<h2>Taxi routes through Ward 45</h2>
+<div class="card"><div id="taxi-list"></div></div>
+</main>
+
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="data/bounds.js"></script>
+<script src="data/crash.js"></script><script src="data/taxi.js"></script><script src="data/speedbumps.js"></script><script src="data/pedcross.js"></script>
+<script src="assets/common.js"></script>
+<script>
+buildHeader('traffic.html');
+const C=D.crash;
+const SETS={w45:['Muizenberg SAPS','Steenberg SAPS'],all:Object.keys(C.byStation)};
+const sets=v=>SETS[v]||[v];
+const yrs=Object.keys(C.years);
+const fs=document.getElementById('f-st'),ff=document.getElementById('f-from'),ft=document.getElementById('f-to');
+ff.innerHTML=ft.innerHTML=yrs.map(y=>'<option>'+y+'</option>').join('');ff.value=yrs[0];ft.value=yrs[yrs.length-1];
+document.getElementById('match-note').innerHTML='<strong>How to read the map.</strong> '+fmt(C.matched)+' of '+fmt(C.total)+' crashes ('+Math.round(100*C.matched/C.total)+'%) could be matched to a named road and appear on the map; the rest are in the charts only. Where a route number such as M4 was recorded, the stretch shown is limited to the suburb named in the record. The location is the road, not the exact crash point.';
+const map=newMap('map',{focus:'ward'});map.fitBounds(map.__ward.getBounds().pad(0.7));
+let gL,gP,gTaxi,gBump,gPed,cY,cH,cW,cC;
+const inYears=o=>{const a=+ff.value,b=+ft.value;return Object.entries(o).reduce((s,[y,n])=>s+(+y>=a&&+y<=b?n:0),0);};
+const RAMP=['#fee5d9','#fcae91','#fb6a4a','#de2d26','#a50f15'];
+function band(n){return n>=40?4:n>=20?3:n>=10?2:n>=5?1:0;}
+function draw(){
+  const S=sets(fs.value);
+  const units=C.units.filter(u=>S.includes(u.station)).map(u=>({...u,sel:inYears(u.byYear)})).filter(u=>u.sel>0);
+  const byId=Object.fromEntries(units.map(u=>[u.id,u]));
+  gL&&map.removeLayer(gL);gP&&map.removeLayer(gP);
+  gL=L.geoJSON({type:'FeatureCollection',features:C.lines.features.filter(f=>byId[f.properties.u]&&byId[f.properties.u].sel>=3)},{style:f=>{const u=byId[f.properties.u];const b=band(u.sel);return {color:RAMP[b],weight:3+b*1.5,opacity:.9};},
+    onEachFeature:(f,l)=>{const u=byId[f.properties.u];l.bindPopup('<b>'+esc(u.label)+'</b><br>'+u.sel+' crashes in selected years<br>Fatal: '+u.fatal+' · Serious: '+u.serious+' · Pedestrians hurt: '+u.ped+'<br>Main causes: '+esc(u.causes.map(c=>c[0]).join('; ')));}}).addTo(map);
+  const pts=C.points.filter(p=>S.includes(p.station)).map(p=>({...p,sel:inYears(p.byYear)})).filter(p=>p.sel>=3);
+  gP=L.layerGroup(pts.map(p=>L.circleMarker([p.lat,p.lon],{radius:3+Math.sqrt(p.sel)*0.9,color:'#222',weight:1.5,fillColor:p.fatal?'#000':'#fff',fillOpacity:.75}).bindPopup('<b>'+esc(p.label)+'</b><br>'+p.sel+' crashes in selected years<br>Fatal: '+p.fatal+' · Serious: '+p.serious+' · Pedestrians hurt: '+p.ped))).addTo(map);
+  // stats and charts
+  const agg=(f)=>S.reduce((o,s)=>{const b=C.byStation[s];if(b)f(o,b);return o;},{});
+  const years=agg((o,b)=>Object.entries(b.years).forEach(([y,n])=>o[y]=(o[y]||0)+n));
+  const hour=agg((o,b)=>Object.entries(b.hour).forEach(([h,n])=>o[h]=(o[h]||0)+n));
+  const wk=agg((o,b)=>Object.entries(b.weekday).forEach(([d,n])=>o[d]=(o[d]||0)+n));
+  const cause=agg((o,b)=>b.causes.forEach(([c,n])=>{const k=c||'Cause not recorded';o[k]=(o[k]||0)+n;}));
+  const sev=agg((o,b)=>Object.entries(b.sev).forEach(([k,n])=>o[k]=(o[k]||0)+n));
+  const total=inYears(years);
+  document.getElementById('stats').innerHTML=statCard(fmt(total),'crashes recorded','selected years and precincts')+statCard(fmt(sev.fatal||0),'fatalities','all years in file, selected precincts')+statCard(fmt(sev.serious||0),'serious injuries','all years in file')+statCard(fmt(sev.ped||0),'pedestrians injured or killed','all years in file');
+  const mk=(old,id,type,labels,data,color,opts)=>{old&&old.destroy();return new Chart(document.getElementById(id),{type,data:{labels,datasets:[{data,backgroundColor:color}]},options:Object.assign({maintainAspectRatio:false,plugins:{legend:{display:false}}},opts||{})});};
+  const ys=Object.keys(years).sort();cY=mk(cY,'ch-year','bar',ys,ys.map(y=>years[y]),'#c0392b');
+  const hs=[...Array(24).keys()];cH=mk(cH,'ch-hour','bar',hs.map(h=>h+':00'),hs.map(h=>hour[h]||0),'#2980b9');
+  const wd=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];cW=mk(cW,'ch-wk','bar',wd,wd.map(d=>wk[d]||0),'#8e44ad');
+  const cs=Object.entries(cause).sort((a,b)=>b[1]-a[1]).slice(0,8);cC=mk(cC,'ch-cause','bar',cs.map(x=>x[0]),cs.map(x=>x[1]),'#0d6e6e',{indexAxis:'y'});
+  document.getElementById('roads').innerHTML='<table class="t"><tr><th>Road</th><th class="num">Crashes</th><th class="num">Fatal</th><th class="num">Serious</th><th>Top cause</th></tr>'+units.sort((a,b)=>b.sel-a.sel).slice(0,25).map(u=>'<tr><td>'+esc(u.label+(u.kind==='rte'&&!u.area?' (whole route)':''))+'</td><td class="num">'+u.sel+'</td><td class="num">'+u.fatal+'</td><td class="num">'+u.serious+'</td><td style="font-size:12px">'+esc(u.causes[0]?u.causes[0][0]:'')+'</td></tr>').join('')+'</table>';
+  document.getElementById('ints').innerHTML='<table class="t"><tr><th>Intersection</th><th class="num">Crashes</th><th class="num">Fatal</th><th class="num">Serious</th></tr>'+pts.sort((a,b)=>b.sel-a.sel).slice(0,25).map(p=>'<tr><td>'+esc(p.label)+'</td><td class="num">'+p.sel+'</td><td class="num">'+p.fatal+'</td><td class="num">'+p.serious+'</td></tr>').join('')+'</table>';
+}
+[fs,ff,ft].forEach(e=>e.addEventListener('change',draw));
+function toggle(id,mk,store){document.getElementById(id).addEventListener('change',e=>{if(e.target.checked){if(!store.g)store.g=mk();store.g.addTo(map);}else if(store.g)map.removeLayer(store.g);});}
+toggle('c-taxi',()=>L.geoJSON(D.taxi,{style:{color:'#0066cc',weight:3,dashArray:'6 4'},onEachFeature:(f,l)=>l.bindPopup('<b>Taxi route</b><br>'+esc(f.properties.ORGN)+' to '+esc(f.properties.DSTN))}),{});
+toggle('c-bumps',()=>L.geoJSON(D.speedbumps,{pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:3,color:'#555',weight:1,fillColor:'#999',fillOpacity:.9}),onEachFeature:(f,l)=>l.bindTooltip('Speed bump')}),{});
+toggle('c-ped',()=>L.geoJSON(D.pedcross,{pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:3.5,color:'#1d4e89',weight:1,fillColor:'#5dade2',fillOpacity:.9}),onEachFeature:(f,l)=>l.bindTooltip('Pedestrian crossing')}),{});
+addLegend(map,'<b>Crashes on road</b><br>'+['1 to 4','5 to 9','10 to 19','20 to 39','40 or more'].map((t,i)=>'<i class="sq" style="background:'+RAMP[i]+'"></i>'+t).join('<br>')+'<br><i style="background:#fff"></i>Intersection<br><i style="background:#000"></i>Intersection with a death');
+const tx=D.taxi.features.filter(f=>f.properties.w45).map(f=>f.properties);
+document.getElementById('taxi-list').innerHTML=tx.length?'<table class="t"><tr><th>From</th><th>To</th></tr>'+tx.map(p=>'<tr><td>'+esc(p.ORGN)+'</td><td>'+esc(p.DSTN)+'</td></tr>').join('')+'</table><p style="font-size:12px;color:#5d6b70">'+D.taxi.features.length+' taxi route segments touch Subcouncil 19. Tick "Taxi routes" on the map to see them.</p>':'<p>No taxi routes recorded in Ward 45.</p>';
+draw();buildFooter('Crash records: City crash data statistics 2019 to 2024.');
+</script>
+</body></html>

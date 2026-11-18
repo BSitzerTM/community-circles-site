@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ward 45 · Marina Estate community data report</title>
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<main>
+<h1>Ward 45 &middot; Marina Estate</h1>
+<p class="lede">A data report on Ward 45 (Muizenberg, Lakeside and Marina da Gama) and its subcouncil, built from the City of Cape Town's open data portal. Ward 45 is part of <b>Subcouncil 19</b>, which runs south along the False Bay coast to Noordhoek. Each page has an interactive map: switch between Ward 45 and the whole subcouncil, click anything for detail.</p>
+
+<div class="grid g4" id="facts"></div>
+
+<h2>Everything on one map</h2>
+<div class="toolbar">
+  <label><input type="checkbox" data-l="worship" checked> Places of worship</label>
+  <label><input type="checkbox" data-l="health" checked> Health facilities</label>
+  <label><input type="checkbox" data-l="firestn" checked> Fire stations</label>
+  <label><input type="checkbox" data-l="wqsites" checked> Water-quality sites</label>
+  <label><input type="checkbox" data-l="trading" checked> Informal trading bays</label>
+  <label><input type="checkbox" data-l="parks"> Parks</label>
+  <label><input type="checkbox" data-l="ratepayers"> Ratepayers' associations</label>
+</div>
+<div id="map" class="map tall"></div>
+
+<h2>Explore</h2>
+<div class="grid g3" id="tiles"></div>
+
+<h2>What isn't in the open data</h2>
+<div class="grid g2">
+  <div class="card"><ul style="margin:0;padding-left:18px">
+    <li><b>Crime.</b> No crime dataset in the portal; the StreetSignal storymap is the closest source.</li>
+    <li><b>Outdoor gyms.</b> Listed on the portal without coordinates or a download, so they can't be mapped.</li>
+    <li><b>Ward-level budgets.</b> Budget files have no ward field. The subcouncil allocation annexures give amounts for Subcouncil 19 only.</li>
+    <li><b>Subcouncil minutes, agendas and plans.</b> Held in the City's council calendar and document centre, not the portal.</li>
+  </ul></div>
+  <div class="card"><ul style="margin:0;padding-left:18px">
+    <li><b>Population history.</b> Only a 2025 estimate per suburb; the valuation rolls (2012 to 2025) show change in homes and values.</li>
+    <li><b>Below-ground electricity plans.</b> Not published. Streetlights (above-ground public lighting) and distribution capacity are in the portal.</li>
+    <li><b>Air quality at Muizenberg.</b> No monitoring station in the subcouncil; the nearest are 15 to 20 km away.</li>
+    <li><b>Homeless shelters.</b> The City's list has none in Muizenberg; the nearest are at Kalk Bay and Simon's Town.</li>
+  </ul></div>
+</div>
+</main>
+
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="data/bounds.js"></script>
+<script src="data/worship.js"></script><script src="data/health.js"></script><script src="data/firestn.js"></script><script src="data/wqsites.js"></script><script src="data/trading.js"></script><script src="data/parks.js"></script><script src="data/ratepayers.js"></script>
+<script src="data/people.js"></script><script src="data/beats.js"></script><script src="data/hoa.js"></script><script src="data/wetlands.js"></script>
+<script src="assets/common.js"></script>
+<script>
+buildHeader('index.html');
+const w=k=>D[k].features.filter(f=>f.properties.w45).length;
+const pop=D.people.pop;
+document.getElementById('facts').innerHTML=
+ statCard(fmt(pop['MARINA DA GAMA'].pop),'people in Marina da Gama (2025 estimate)',fmt(pop['MUIZENBERG'].pop)+' in Muizenberg, '+fmt(pop['LAKESIDE'].pop)+' in Lakeside')+
+ statCard('Subcouncil 19','the subcouncil Ward 45 belongs to','R1.9 million operating allocation each year')+
+ statCard(w('wqsites'),'water-quality monitoring sites in Ward 45','Zandvlei and the Marina da Gama canals')+
+ statCard(w('hoa')+' + '+D.ratepayers.features.filter(f=>f.properties.w45).length,'homeowners\' and ratepayers\' associations touching the ward')+
+ statCard(w('parks'),'parks in Ward 45',w('worship')+' places of worship, '+w('health')+' health facility')+
+ statCard(w('trading'),'informal trading bays','all at Royal Road behind the Muizenberg flea market')+
+ statCard(w('beats'),'refuse collection beats touch the ward','Think Twice recycling contractor serves the area')+
+ statCard(w('wetlands'),'wetland polygons, incl. Zandvlei','moderately modified (class C) where assessed');
+const map=newMap('map',{focus:'ward'});const G={};
+const mk=(k,fn)=>{G[k]=fn();};
+mk('worship',()=>L.geoJSON(D.worship,{pointToLayer:(f,ll)=>circle(ll,'#8e44ad',6),onEachFeature:(f,l)=>l.bindPopup('<b>'+esc(f.properties.NAME)+'</b><br>'+esc(f.properties.RLGN_TYPE)+' · '+esc(f.properties.BLDG_TYPE))}));
+mk('health',()=>L.geoJSON(D.health,{pointToLayer:(f,ll)=>circle(ll,'#e74c3c',7),onEachFeature:(f,l)=>l.bindPopup('<b>'+esc(f.properties.NAME)+'</b><br>'+esc(f.properties.CLS)+' · '+esc(f.properties.TYPE))}));
+mk('firestn',()=>L.geoJSON(D.firestn,{pointToLayer:(f,ll)=>circle(ll,'#e67e22',9),onEachFeature:(f,l)=>l.bindPopup('<b>'+esc(f.properties.FIRE_STN_NAME)+' fire station</b>')}));
+mk('wqsites',()=>L.geoJSON(D.wqsites,{pointToLayer:(f,ll)=>circle(ll,'#2980b9',f.properties.w45?8:5),onEachFeature:(f,l)=>l.bindPopup('<b>'+esc(f.properties.LCTN_DSCR)+'</b><br>'+esc(f.properties.WTRB_TYPE))}));
+mk('trading',()=>L.geoJSON(D.trading,{style:{color:'#16a085',weight:2,fillColor:'#1abc9c',fillOpacity:.7},onEachFeature:(f,l)=>l.bindPopup('<b>'+esc(f.properties.BAY_NAME)+'</b><br>'+esc(f.properties.RNTL_STS))}));
+mk('parks',()=>L.geoJSON(D.parks,{style:{color:'#2e8b57',weight:1,fillColor:'#7ccf8f',fillOpacity:.5},onEachFeature:(f,l)=>l.bindPopup('<b>'+esc(f.properties.PARK_NAME)+'</b>')}));
+mk('ratepayers',()=>L.geoJSON(D.ratepayers,{style:f=>({color:'#c0392b',weight:1.5,fillColor:'#e74c3c',fillOpacity:.12}),onEachFeature:(f,l)=>l.bindPopup('<b>'+esc(f.properties.NME)+'</b>')}));
+document.querySelectorAll('[data-l]').forEach(c=>{if(c.checked)G[c.dataset.l].addTo(map);c.addEventListener('change',()=>c.checked?G[c.dataset.l].addTo(map):map.removeLayer(G[c.dataset.l]));});
+addLegend(map,'<span style="color:#c0392b">&#9644;</span> Ward 45 &nbsp;<span style="color:#2c5aa0">- -</span> Subcouncil 19<br><i style="background:#8e44ad"></i>Worship<br><i style="background:#e74c3c"></i>Health<br><i style="background:#e67e22"></i>Fire station<br><i style="background:#2980b9"></i>Water site<br><i class="sq" style="background:#1abc9c"></i>Trading bays');
+const T=[['people.html','People &amp; ratepayers','Population, home values 2012 to 2025, household survey, and the associations that represent Ward 45 and its neighbours.'],
+ ['business.html','Informal trade','Trading bays at Royal Road and across the subcouncil, rental status, and licensed businesses by suburb.'],
+ ['council.html','Subcouncil 19','Operating budget allocation, planning designations, arrears, and Ward 45 against the whole subcouncil.'],
+ ['fire.html','Fire &amp; emergency','Incidents by suburb and type, 2009 to 2022, with seasonal patterns and fire stations.'],
+ ['waste.html','Refuse &amp; recycling','Collection days by beat, the Think Twice contractor, and 600+ private recyclers by suburb.'],
+ ['community.html','Community','Places of worship, parks, recreation hubs, clinics and hospitals, and ECD centres.'],
+ ['traffic.html','Traffic &amp; taxis','Crash hotspots by road and intersection, 2019 to 2024, plus taxi routes, speed bumps and crossings.'],
+ ['air.html','Air quality','The City\'s monitoring stations nearest Ward 45 and what they show.'],
+ ['water.html','Water &amp; land','Zandvlei and Marina canals water quality, wetlands, watercourses and soils.'],
+ ['sources.html','Sources &amp; method','Every dataset used, how figures were calculated, and the limits of the data.']];
+document.getElementById('tiles').innerHTML=T.map(t=>'<a href="'+t[0]+'" style="text-decoration:none;color:inherit"><div class="card" style="height:100%"><h3 style="color:var(--brand)">'+t[1]+'</h3><p style="margin:0;color:#5d6b70;font-size:14px">'+t[2]+'</p></div></a>').join('');
+buildFooter();
+</script>
+</body></html>
