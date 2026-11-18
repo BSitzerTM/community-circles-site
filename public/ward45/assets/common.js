@@ -11,22 +11,25 @@
 if(window.Chart){Chart.defaults.animation=false;}
 /* Shared helpers for every page. Data files set window globals; no fetch() so file:// works. */
 const PAGES = [
-  ['index.html','Overview'],['people.html','People & Ratepayers'],['business.html','Informal Trade'],
-  ['council.html','Subcouncil 19'],['fire.html','Fire'],['waste.html','Refuse & Recycling'],
-  ['community.html','Community'],['traffic.html','Traffic & Taxis'],['air.html','Air'],
-  ['water.html','Water & Land'],['sources.html','Sources']
+  ['index.html','Overview'],['people.html','People'],['business.html','Informal trade'],
+  ['council.html','Subcouncil 19'],['fire.html','Fire'],['waste.html','Refuse'],
+  ['community.html','Community'],['traffic.html','Traffic'],['service-requests.html','Service requests'],
+  ['air.html','Air'],['water.html','Water & land'],['sources.html','Sources']
 ];
+// Same header and footer as the main Connected Community site (its logo, navigation, wave and footer).
 function buildHeader(active){
-  const h=document.createElement('header'); h.className='top';
-  h.innerHTML='<div class="in"><span class="brand">Ward 45 &middot; Marina Estate</span><nav>'+
-    PAGES.map(p=>'<a href="'+p[0]+'"'+(p[0]===active?' class="on"':'')+'>'+p[1]+'</a>').join('')+'</nav></div>';
+  const h=document.createElement('header');h.className='site-header';
+  h.innerHTML='<a class="brand" href="../"><img src="assets/brand/lockup-sm.png" alt="Connected Community Marine Estate, home" width="116" height="88"></a>'+
+    '<nav aria-label="Ward 45 report"><ul class="nav-list">'+PAGES.map(p=>'<li><a href="'+p[0]+'"'+(p[0]===active?' aria-current="page"':'')+'>'+p[1]+'</a></li>').join('')+'</ul></nav>';
   document.body.prepend(h);
+  const w=document.createElement('div');w.className='wave';w.setAttribute('aria-hidden','true');h.after(w);
 }
 function buildFooter(extra){
-  const f=document.createElement('footer');
-  f.innerHTML='Data: City of Cape Town Open Data Portal (ArcGIS Hub). Basemap &copy; Esri. Map data &copy; OpenStreetMap contributors. '+
-   'Counts are for features that touch the Ward 45 or Subcouncil 19 boundary. '+(extra||'')+
-   ' Data pulled '+(window.META?META.pulled:'')+'.';
+  const f=document.createElement('footer');f.className='site-footer';
+  f.innerHTML='<div class="footer-brand"><img src="assets/brand/mark-sm-white.png" alt="" width="81" height="72"><img src="assets/brand/lockup-sm-white.png" alt="Connected Community Marine Estate" width="126" height="96"></div>'+
+   '<p>Ward 45 data report, built from City of Cape Town open data. Map basemap &copy; Esri. Map data &copy; OpenStreetMap contributors. '+
+   'Counts are for features that touch the Ward 45 or Subcouncil 19 boundary. '+(extra||'')+' Data pulled '+(window.META?META.pulled:'')+'.</p>'+
+   '<p><a href="../">Back to the Connected Community site</a></p>';
   document.body.appendChild(f);
 }
 function newMap(id, opts){

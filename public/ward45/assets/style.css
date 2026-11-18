@@ -1,49 +1,83 @@
-:root{
-  --bg:#f6f7f4; --card:#fff; --ink:#1d2a2e; --muted:#5d6b70; --line:#dfe4e2;
-  --brand:#0d6e6e; --brand-dark:#084b4b; --accent:#d9822b; --ward:#c0392b; --sc:#2c5aa0;
-  --good:#2e8b57; --warn:#d9822b; --bad:#c0392b;
+/*
+ * Ward 45 report: styled to match the Connected Community site.
+ * Same palette, type and wave divider as the main site's global.css.
+ */
+:root {
+  --ink: #35342f;      /* the logo's charcoal */
+  --muted: #55544d;    /* 7.5:1 on white */
+  --paper: #ffffff;
+  --tint: #f4f2ec;
+  --line: #d3cfc4;
+  --link: #0a5560;     /* deep marine teal */
+  --focus: #b35c00;
+  --warn-bg: #fdf0c8;
+  --warn-ink: #5c4400;
+  --info-bg: #f4f2ec;
+  --info-ink: #35342f;
+  --radius: 14px;
+  --wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='12' viewBox='0 0 48 12'%3E%3Cpath d='M0 6 Q12 -2 24 6 T48 6' fill='none' stroke='%2335342f' stroke-width='4'/%3E%3C/svg%3E");
+  --wave-white: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='12' viewBox='0 0 48 12'%3E%3Cpath d='M0 6 Q12 -2 24 6 T48 6' fill='none' stroke='%23ffffff' stroke-width='4'/%3E%3C/svg%3E");
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
-a{color:var(--brand)}
-header.top{background:var(--brand-dark);color:#fff;position:sticky;top:0;z-index:1000;box-shadow:0 1px 6px rgba(0,0,0,.25)}
-header.top .in{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:18px;padding:8px 16px;flex-wrap:wrap}
-header.top .brand{font-weight:700;letter-spacing:.2px;white-space:nowrap}
-header.top nav{display:flex;gap:2px;flex-wrap:wrap}
-header.top nav a{color:#cfe6e6;text-decoration:none;padding:6px 10px;border-radius:6px;font-size:14px}
-header.top nav a:hover{background:rgba(255,255,255,.12);color:#fff}
-header.top nav a.on{background:#fff;color:var(--brand-dark);font-weight:600}
-main{max-width:1280px;margin:0 auto;padding:20px 16px 60px}
-h1{font-size:28px;margin:6px 0 4px}
-h2{font-size:20px;margin:28px 0 10px}
-h3{font-size:16px;margin:0 0 8px}
-.lede{color:var(--muted);max-width:880px;margin:0 0 18px}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--paper);color:var(--ink);line-height:1.6}
+a{color:var(--link);text-underline-offset:0.18em}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.skip-link{position:absolute;left:.5rem;top:-3rem;padding:.5rem 1rem;background:var(--ink);color:#fff;z-index:10}
+.skip-link:focus{top:.5rem}
+
+/* Header: logo on the left, navigation beside it, wave underneath (as on the main site) */
+.site-header{display:flex;flex-wrap:wrap;gap:.5rem 2rem;align-items:center;justify-content:space-between;padding:.75rem 1.5rem .5rem;background:var(--paper)}
+.brand{display:block;line-height:0}
+.brand img{height:88px;width:auto}
+.wave{height:12px;background:var(--wave) repeat-x left center;background-size:48px 12px}
+.nav-list{display:flex;flex-wrap:wrap;gap:.25rem .5rem;margin:0;padding:0;list-style:none}
+.nav-list a{display:inline-flex;align-items:center;gap:.4rem;color:var(--ink);font-weight:600;text-decoration:none;padding:.35rem .55rem}
+.nav-list a:hover,.nav-list a[aria-current='page']{text-decoration:underline wavy var(--ink);text-decoration-thickness:3px;text-underline-offset:7px}
+.nav-list a[aria-current='page']{font-weight:800}
+
+main{max-width:62rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+h1{font-size:2.1rem;line-height:1.2;margin:.4rem 0 .4rem}
+h2{font-size:1.45rem;margin:2rem 0 .7rem;padding-bottom:.25rem;border-bottom:3px solid var(--ink);display:inline-block;min-width:40%}
+h3{font-size:1.05rem;margin:0 0 .5rem}
+.lede{color:var(--muted);max-width:45rem;margin:0 0 1.1rem;font-size:1.05rem}
 .grid{display:grid;gap:16px}
 .g2{grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
 .g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
 .g4{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
-.stat .n{font-size:30px;font-weight:700;color:var(--brand-dark);line-height:1.1}
-.stat .l{color:var(--muted);font-size:13px;margin-top:4px}
-.stat .s{font-size:12px;color:var(--muted);margin-top:6px}
-.map{height:520px;border-radius:12px;border:1px solid var(--line);overflow:hidden}
+.card{background:var(--paper);border:2px solid var(--ink);border-radius:var(--radius);padding:16px;box-shadow:none}
+.stat .n{font-size:1.9rem;font-weight:800;color:var(--ink);line-height:1.1}
+.stat .l{color:var(--muted);font-size:.9rem;margin-top:4px}
+.stat .s{font-size:.8rem;color:var(--muted);margin-top:6px}
+.map{height:520px;border-radius:var(--radius);border:2px solid var(--ink);overflow:hidden}
 .map.tall{height:640px}
 .chart-box{position:relative;height:320px}
-.note{background:#fff8e6;border:1px solid #f1deaa;border-radius:10px;padding:10px 14px;color:#6b5513;font-size:14px}
-.note.info{background:#eaf4f4;border-color:#c5dede;color:#134e4e}
-.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;background:#e9efee;color:#2e4a4a;margin:0 4px 4px 0}
-.pill.ward{background:#fbe5e1;color:#8c2a1e}.pill.sc{background:#e2eaf6;color:#1f3f73}
-table.t{width:100%;border-collapse:collapse;font-size:14px}
+.note{background:var(--warn-bg);border:1px solid #e9d68f;border-radius:10px;padding:10px 14px;color:var(--warn-ink);font-size:.92rem}
+.note.info{background:var(--info-bg);border-color:var(--line);color:var(--info-ink)}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;background:var(--tint);border:1px solid var(--line);color:var(--ink);margin:0 4px 4px 0}
+.pill.ward{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pill.sc{background:var(--paper);color:var(--ink);border-color:var(--ink)}
+table.t{width:100%;border-collapse:collapse;font-size:.92rem}
 table.t th,table.t td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
-table.t th{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+table.t th{font-size:.75rem;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
 table.t td.num,table.t th.num{text-align:right;font-variant-numeric:tabular-nums}
-.toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:0 0 10px;font-size:14px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:0 0 10px;font-size:.95rem}
 .toolbar label{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
-.toolbar select,.toolbar input[type=range]{font:inherit}
-.legend{background:rgba(255,255,255,.95);padding:8px 10px;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.25);font-size:12px;line-height:1.5}
+.toolbar select{font:inherit;border:2px solid var(--ink);border-radius:8px;padding:3px 6px;background:var(--paper)}
+.legend{background:rgba(255,255,255,.96);padding:8px 10px;border-radius:8px;border:1px solid var(--line);font-size:12px;line-height:1.5}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.3)}
 .legend i.sq{border-radius:2px}
-footer{max-width:1280px;margin:0 auto;padding:14px 16px 40px;color:var(--muted);font-size:12.5px}
-.tag-gap{color:var(--bad);font-weight:600}
-@media print{header.top{position:static}.map{height:420px}}
+
+/* Footer: charcoal with a white wave, as on the main site */
+.site-footer{margin-top:2rem;padding:0 1.25rem 2rem;background:var(--ink);color:#f4f2ec;font-size:.95rem;text-align:center}
+.site-footer::before{content:'';display:block;height:12px;margin:0 -1.25rem 1.5rem;background:var(--wave-white) repeat-x left center;background-size:48px 12px}
+.site-footer p{max-width:40rem;margin:0 auto .6rem}
+.site-footer a{color:#fff}
+.site-footer a:hover{text-decoration:underline wavy;text-underline-offset:4px}
+.site-footer :focus-visible{outline-color:#ffd27a}
+.footer-brand{display:flex;justify-content:center;gap:1rem;margin-bottom:1rem}
+.footer-brand img{height:auto}
+
+@media (max-width:40rem){h1{font-size:1.6rem}.brand img{height:70px}}
+@media print{.map{height:420px}}
