@@ -36,27 +36,32 @@ const offsets = (count: number, lineHeight: number) =>
   Array.from({ length: count }, (_, i) => (i - (count - 1) / 2) * lineHeight + lineHeight / 3);
 
 // --- Diagram layout -----------------------------------------------------------
-const size = 1000;
+// Each circle joined to the hub gets a slice of the ring, sized by how many
+// sub-circles it has (a circle with none counts as 1 slice, one with four counts
+// as 5). Its sub-circles are spread across that slice, so none of them overlap.
+const size = 1200;
 const centre = size / 2;
 const hubRadius = 100;
-const ring1Radius = 290;
-const ring1NodeRadius = 66;
-const ring2Radius = 430;
-const ring2NodeRadius = 52;
-// Sub-circles fan out around their parent, 15 degrees apart, so their circles do not overlap.
-const fan = (15 * Math.PI) / 180;
+const ring1Radius = 370;
+const ring1NodeRadius = 62;
+const ring2Radius = 530;
+const ring2NodeRadius = 50;
+
+const slices = level1.map((c) => 1 + childrenOf(c.id).length);
+const totalSlices = slices.reduce((a, b) => a + b, 0);
+let cursor = -Math.PI / 2; // start at the top and go clockwise
 
 const ring1 = level1.map((c, i) => {
-  // Start at the top and go clockwise so the circles are spread evenly.
-  const angle = -Math.PI / 2 + (2 * Math.PI * i) / level1.length;
+  const sector = (2 * Math.PI * slices[i]) / totalSlices;
+  const angle = cursor + sector / 2;
   const kids = childrenOf(c.id);
-  return {
+  const placed = {
     id: c.id,
     lines: wrap(c.data.name, 13),
     x: centre + ring1Radius * Math.cos(angle),
     y: centre + ring1Radius * Math.sin(angle),
     kids: kids.map((k, j) => {
-      const a = angle + (j - (kids.length - 1) / 2) * fan;
+      const a = cursor + ((j + 0.5) * sector) / kids.length;
       return {
         id: k.id,
         lines: wrap(k.data.name, 12),
@@ -65,6 +70,8 @@ const ring1 = level1.map((c, i) => {
       };
     }),
   };
+  cursor += sector;
+  return placed;
 });
 
 const ring1Lines = ring1.map((n) => ({ x: n.x, y: n.y }));
