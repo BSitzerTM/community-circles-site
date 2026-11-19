@@ -41,13 +41,13 @@ const offsets = (count: number, lineHeight: number) =>
 // as 5). Its sub-circles are spread across that slice, so none of them overlap.
 // The map is drawn in these units and scaled to the page, so the sizes are large
 // to keep the text readable once it is shrunk to fit.
-const size = 1450;
+const size = 1540;
 const centre = size / 2;
 const hubRadius = 120;
-const ring1Radius = 460;
-const ring1NodeRadius = 76;
-const ring2Radius = 650;
-const ring2NodeRadius = 64;
+const ring1Radius = 480;
+const ring1NodeRadius = 84;
+const ring2Radius = 690;
+const ring2NodeRadius = 74;
 
 const slices = level1.map((c) => 1 + childrenOf(c.id).length);
 const totalSlices = slices.reduce((a, b) => a + b, 0);
@@ -59,14 +59,14 @@ const ring1 = level1.map((c, i) => {
   const kids = childrenOf(c.id);
   const placed = {
     id: c.id,
-    lines: wrap(c.data.name, 12),
+    lines: wrap(c.data.name, 10),
     x: centre + ring1Radius * Math.cos(angle),
     y: centre + ring1Radius * Math.sin(angle),
     kids: kids.map((k, j) => {
       const a = cursor + ((j + 0.5) * sector) / kids.length;
       return {
         id: k.id,
-        lines: wrap(k.data.name, 11),
+        lines: wrap(k.data.name, 10),
         x: centre + ring2Radius * Math.cos(a),
         y: centre + ring2Radius * Math.sin(a),
       };
@@ -218,7 +218,7 @@ const deeper = all.filter((c) => !tree.some((t) => t.circle.id === c.id));
   }
 
   .map-label-sub {
-    font-size: 22px;
+    font-size: 21px;
   }
 
   /* The centre label sits on the charcoal, so it needs white text (about 11:1 contrast). */
