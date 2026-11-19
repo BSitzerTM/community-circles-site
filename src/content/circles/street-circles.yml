@@ -1,0 +1,4 @@
+name: "Street circles"
+aim: "Connects the street WhatsApp groups of Marine Estate to the CCME."
+description: "Each street keeps its own group, structure and admins. Street groups receive a quarterly CCME report, so they are not flooded with messages."
+parent: connectors-circle

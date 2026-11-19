@@ -3,15 +3,20 @@ import Base from '../../layouts/Base.astro';
 import { directory, url } from '../../lib/records';
 
 const dir = await directory();
-// Sort so top-level circles come first, then their sub-circles, each group alphabetically.
-const circles = [...dir.circles].sort((a, b) => {
-  const aTop = a.data.parent ? 1 : 0;
-  const bTop = b.data.parent ? 1 : 0;
-  return aTop - bTop || a.data.name.localeCompare(b.data.name);
-});
+const all = [...dir.circles];
+const byName = (a: { data: { name: string } }, b: { data: { name: string } }) =>
+  a.data.name.localeCompare(b.data.name);
+
+// The top-level circle (the Connectors Circle) is the centre of the map.
+const hub = all.find((c) => !c.data.parent)!;
+const childrenOf = (id: string) => all.filter((c) => c.data.parent === id).sort(byName);
+
+// The map shows two levels around the centre: the circles that join the hub,
+// then their sub-circles. Anything deeper is still listed below the map.
+const level1 = childrenOf(hub.id);
 
 /** Splits a name into lines of about `max` characters, so it fits inside a circle. */
-function wrap(text: string, max = 13): string[] {
+function wrap(text: string, max: number): string[] {
   const lines: string[] = [];
   let current = '';
   for (const word of text.split(' ')) {
@@ -26,85 +31,116 @@ function wrap(text: string, max = 13): string[] {
   return lines;
 }
 
-// --- Diagram layout ---------------------------------------------------------
-// The Connectors Circle (the top-level circle) is in the centre. Every other
-// circle sits on a ring around it, joined to the centre by a line.
-const hub = circles.find((c) => !c.data.parent);
-const spokes = circles.filter((c) => c !== hub);
-const size = 800;
-const centre = size / 2;
-const ringRadius = 290;
-const spokeRadius = 62;
-const hubRadius = 92;
+/** Vertical offsets so a block of text lines is centred on the circle's middle. */
+const offsets = (count: number, lineHeight: number) =>
+  Array.from({ length: count }, (_, i) => (i - (count - 1) / 2) * lineHeight + lineHeight / 3);
 
-const nodes = spokes.map((c, i) => {
+// --- Diagram layout -----------------------------------------------------------
+const size = 1000;
+const centre = size / 2;
+const hubRadius = 100;
+const ring1Radius = 290;
+const ring1NodeRadius = 66;
+const ring2Radius = 430;
+const ring2NodeRadius = 52;
+// Sub-circles fan out around their parent, 15 degrees apart, so their circles do not overlap.
+const fan = (15 * Math.PI) / 180;
+
+const ring1 = level1.map((c, i) => {
   // Start at the top and go clockwise so the circles are spread evenly.
-  const angle = -Math.PI / 2 + (2 * Math.PI * i) / spokes.length;
+  const angle = -Math.PI / 2 + (2 * Math.PI * i) / level1.length;
+  const kids = childrenOf(c.id);
   return {
     id: c.id,
-    lines: wrap(c.data.name),
-    x: centre + ringRadius * Math.cos(angle),
-    y: centre + ringRadius * Math.sin(angle),
+    lines: wrap(c.data.name, 13),
+    x: centre + ring1Radius * Math.cos(angle),
+    y: centre + ring1Radius * Math.sin(angle),
+    kids: kids.map((k, j) => {
+      const a = angle + (j - (kids.length - 1) / 2) * fan;
+      return {
+        id: k.id,
+        lines: wrap(k.data.name, 12),
+        x: centre + ring2Radius * Math.cos(a),
+        y: centre + ring2Radius * Math.sin(a),
+      };
+    }),
   };
 });
 
-/** Vertical offsets so a block of text lines is centred on the circle's middle. */
-const lineHeight = 18;
-const offsets = (count: number) => Array.from({ length: count }, (_, i) => (i - (count - 1) / 2) * lineHeight + 5);
+const ring1Lines = ring1.map((n) => ({ x: n.x, y: n.y }));
+const ring2 = ring1.flatMap((n) => n.kids.map((k) => ({ ...k, parentX: n.x, parentY: n.y })));
+
+// The list below the map follows the same tree: each circle, then its sub-circles, indented.
+const tree = [hub, ...level1.flatMap((c) => [c, ...childrenOf(c.id)])].map((c) => ({
+  circle: c,
+  depth: c.id === hub.id ? 0 : c.data.parent === hub.id ? 1 : 2,
+}));
+const deeper = all.filter((c) => !tree.some((t) => t.circle.id === c.id));
 ---
 <Base title="Circles">
   <h1>Circles</h1>
   <p class="lede">A circle is a team with a clear aim. Each circle has roles, meets regularly and makes its own decisions.</p>
 
-  {
-    hub ? (
-      <section aria-labelledby="map-heading">
-        <h2 id="map-heading">How the circles connect</h2>
-        <p class="section-note">
-          The {hub.data.name} is at the centre. Every other circle connects to it. The full list of circles is below the map.
-        </p>
-        <svg
-          class="circle-map"
-          viewBox={`0 0 ${size} ${size}`}
-          role="group"
-          aria-label={`Map of ${spokes.length} circles connected to the ${hub.data.name}. The same circles are listed below.`}
-        >
-          {/* Lines first, so the circles are drawn on top of them. */}
-          {nodes.map((n) => (
-            <line x1={centre} y1={centre} x2={n.x} y2={n.y} class="map-line" />
-          ))}
+  <section aria-labelledby="map-heading">
+    <h2 id="map-heading">How the circles connect</h2>
+    <p class="section-note">
+      The {hub.data.name} is at the centre. The circles joined to it are around it, and their sub-circles are on the outer ring. Select a circle to open its page. The same structure is listed below the map.
+    </p>
+    <svg
+      class="circle-map"
+      viewBox={`0 0 ${size} ${size}`}
+      role="group"
+      aria-label={`Map of the circles. ${level1.length} circles connect to the ${hub.data.name}, and ${ring2.length} sub-circles connect to them.`}
+    >
+      {/* Lines first, so the circles are drawn on top of them. */}
+      {ring1Lines.map((n) => (
+        <line x1={centre} y1={centre} x2={n.x} y2={n.y} class="map-line" />
+      ))}
+      {ring2.map((k) => (
+        <line x1={k.parentX} y1={k.parentY} x2={k.x} y2={k.y} class="map-line map-line-sub" />
+      ))}
 
-          {nodes.map((n) => (
-            <a href={url(`circles/${n.id}/`)}>
-              <title>{dir.circleName(n.id)}</title>
-              <circle cx={n.x} cy={n.y} r={spokeRadius} class="map-node" />
-              <text text-anchor="middle" class="map-label">
-                {n.lines.map((line, i) => (
-                  <tspan x={n.x} y={n.y + offsets(n.lines.length)[i]}>{line}</tspan>
-                ))}
-              </text>
-            </a>
-          ))}
+      {ring1.map((n) => (
+        <a href={url(`circles/${n.id}/`)}>
+          <title>{dir.circleName(n.id)}</title>
+          <circle cx={n.x} cy={n.y} r={ring1NodeRadius} class="map-node" />
+          <text text-anchor="middle" class="map-label">
+            {n.lines.map((line, i) => (
+              <tspan x={n.x} y={n.y + offsets(n.lines.length, 17)[i]}>{line}</tspan>
+            ))}
+          </text>
+        </a>
+      ))}
 
-          <a href={url(`circles/${hub.id}/`)}>
-            <title>{hub.data.name}</title>
-            <circle cx={centre} cy={centre} r={hubRadius} class="map-hub" />
-            <text text-anchor="middle" class="map-label map-label-hub">
-              {wrap(hub.data.name, 14).map((line, i, all) => (
-                <tspan x={centre} y={centre + offsets(all.length)[i]}>{line}</tspan>
-              ))}
-            </text>
-          </a>
-        </svg>
-      </section>
-    ) : null
-  }
+      {ring2.map((k) => (
+        <a href={url(`circles/${k.id}/`)}>
+          <title>{dir.circleName(k.id)}</title>
+          <circle cx={k.x} cy={k.y} r={ring2NodeRadius} class="map-node map-node-sub" />
+          <text text-anchor="middle" class="map-label map-label-sub">
+            {k.lines.map((line, i) => (
+              <tspan x={k.x} y={k.y + offsets(k.lines.length, 14)[i]}>{line}</tspan>
+            ))}
+          </text>
+        </a>
+      ))}
+
+      <a href={url(`circles/${hub.id}/`)}>
+        <title>{hub.data.name}</title>
+        <circle cx={centre} cy={centre} r={hubRadius} class="map-hub" />
+        <text text-anchor="middle" class="map-label map-label-hub">
+          {wrap(hub.data.name, 14).map((line, i, all) => (
+            <tspan x={centre} y={centre + offsets(all.length, 20)[i]}>{line}</tspan>
+          ))}
+        </text>
+      </a>
+    </svg>
+  </section>
 
   <h2>All circles</h2>
   <ul class="card-list">
     {
-      circles.map((circle) => (
-        <li class="card">
+      tree.map(({ circle, depth }) => (
+        <li class="card" style={`margin-left: ${depth * 1.75}rem`}>
           <h3 class="card-title">
             <a href={url(`circles/${circle.id}/`)}>{circle.data.name}</a>
           </h3>
@@ -117,13 +153,24 @@ const offsets = (count: number) => Array.from({ length: count }, (_, i) => (i - 
         </li>
       ))
     }
+    {
+      deeper.map((circle) => (
+        <li class="card">
+          <h3 class="card-title">
+            <a href={url(`circles/${circle.id}/`)}>{circle.data.name}</a>
+          </h3>
+          <p>{circle.data.aim}</p>
+          <p class="meta">Part of {dir.circleName(circle.data.parent ?? '')}</p>
+        </li>
+      ))
+    }
   </ul>
 </Base>
 
 <style>
   .circle-map {
     width: 100%;
-    max-width: 40rem;
+    max-width: 46rem;
     height: auto;
     display: block;
     margin: 1rem auto;
@@ -134,10 +181,19 @@ const offsets = (count: number) => Array.from({ length: count }, (_, i) => (i - 
     stroke-width: 3;
   }
 
+  .map-line-sub {
+    stroke-width: 2;
+  }
+
   .map-node {
     fill: #f4f2ec;
     stroke: #35342f;
     stroke-width: 3;
+  }
+
+  .map-node-sub {
+    fill: #ffffff;
+    stroke-width: 2;
   }
 
   .map-hub {
@@ -147,15 +203,20 @@ const offsets = (count: number) => Array.from({ length: count }, (_, i) => (i - 
   }
 
   .map-label {
-    font-size: 15px;
+    font-size: 17px;
     fill: #35342f;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .map-label-sub {
+    font-size: 14px;
   }
 
   /* The centre label sits on the charcoal, so it needs white text (about 11:1 contrast). */
   .map-label-hub {
     fill: #ffffff;
     font-weight: 700;
+    font-size: 20px;
   }
 
   /* Keyboard focus: thicken the ring of the focused circle. */
@@ -166,7 +227,7 @@ const offsets = (count: number) => Array.from({ length: count }, (_, i) => (i - 
   .circle-map a:focus .map-node,
   .circle-map a:focus .map-hub {
     stroke: #b35c00;
-    stroke-width: 5;
+    stroke-width: 6;
   }
 
   .circle-map a:hover .map-node {
