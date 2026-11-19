@@ -49,6 +49,15 @@ const ring1NodeRadius = 80;
 const ring2Radius = 720;
 const ring2NodeRadius = 72;
 
+/**
+ * Shrinks a label's font size when its longest word would not fit across the circle,
+ * so one-word names such as "Announcements" stay inside their circle.
+ */
+const fitFont = (lines: string[], radius: number, base: number) => {
+  const longest = Math.max(...lines.map((l) => l.length));
+  return Math.min(base, Math.floor((radius * 2 * 0.9) / (longest * 0.56)));
+};
+
 const slices = level1.map((c) => 1 + childrenOf(c.id).length);
 const totalSlices = slices.reduce((a, b) => a + b, 0);
 let cursor = -Math.PI / 2; // start at the top and go clockwise
@@ -57,16 +66,20 @@ const ring1 = level1.map((c, i) => {
   const sector = (2 * Math.PI * slices[i]) / totalSlices;
   const angle = cursor + sector / 2;
   const kids = childrenOf(c.id);
+  const lines1 = wrap(c.data.name, 10);
   const placed = {
     id: c.id,
-    lines: wrap(c.data.name, 10),
+    lines: lines1,
+    fs: fitFont(lines1, ring1NodeRadius, 24),
     x: centre + ring1Radius * Math.cos(angle),
     y: centre + ring1Radius * Math.sin(angle),
     kids: kids.map((k, j) => {
       const a = cursor + ((j + 0.5) * sector) / kids.length;
+      const lines2 = wrap(k.data.name, 10);
       return {
         id: k.id,
-        lines: wrap(k.data.name, 10),
+        lines: lines2,
+        fs: fitFont(lines2, ring2NodeRadius, 21),
         x: centre + ring2Radius * Math.cos(a),
         y: centre + ring2Radius * Math.sin(a),
       };
@@ -113,7 +126,7 @@ const deeper = all.filter((c) => !tree.some((t) => t.circle.id === c.id));
         <a href={url(`circles/${n.id}/`)}>
           <title>{dir.circleName(n.id)}</title>
           <circle cx={n.x} cy={n.y} r={ring1NodeRadius} class="map-node" />
-          <text text-anchor="middle" class="map-label">
+          <text text-anchor="middle" class="map-label" style={`font-size: ${n.fs}px`}>
             {n.lines.map((line, i) => (
               <tspan x={n.x} y={n.y + offsets(n.lines.length, 27)[i]}>{line}</tspan>
             ))}
@@ -125,7 +138,7 @@ const deeper = all.filter((c) => !tree.some((t) => t.circle.id === c.id));
         <a href={url(`circles/${k.id}/`)}>
           <title>{dir.circleName(k.id)}</title>
           <circle cx={k.x} cy={k.y} r={ring2NodeRadius} class="map-node map-node-sub" />
-          <text text-anchor="middle" class="map-label map-label-sub">
+          <text text-anchor="middle" class="map-label map-label-sub" style={`font-size: ${k.fs}px`}>
             {k.lines.map((line, i) => (
               <tspan x={k.x} y={k.y + offsets(k.lines.length, 24)[i]}>{line}</tspan>
             ))}
