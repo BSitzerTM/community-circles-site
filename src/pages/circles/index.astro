@@ -39,13 +39,15 @@ const offsets = (count: number, lineHeight: number) =>
 // Each circle joined to the hub gets a slice of the ring, sized by how many
 // sub-circles it has (a circle with none counts as 1 slice, one with four counts
 // as 5). Its sub-circles are spread across that slice, so none of them overlap.
-const size = 1200;
+// The map is drawn in these units and scaled to the page, so the sizes are large
+// to keep the text readable once it is shrunk to fit.
+const size = 1450;
 const centre = size / 2;
-const hubRadius = 100;
-const ring1Radius = 370;
-const ring1NodeRadius = 62;
-const ring2Radius = 530;
-const ring2NodeRadius = 50;
+const hubRadius = 120;
+const ring1Radius = 460;
+const ring1NodeRadius = 76;
+const ring2Radius = 650;
+const ring2NodeRadius = 64;
 
 const slices = level1.map((c) => 1 + childrenOf(c.id).length);
 const totalSlices = slices.reduce((a, b) => a + b, 0);
@@ -57,14 +59,14 @@ const ring1 = level1.map((c, i) => {
   const kids = childrenOf(c.id);
   const placed = {
     id: c.id,
-    lines: wrap(c.data.name, 13),
+    lines: wrap(c.data.name, 12),
     x: centre + ring1Radius * Math.cos(angle),
     y: centre + ring1Radius * Math.sin(angle),
     kids: kids.map((k, j) => {
       const a = cursor + ((j + 0.5) * sector) / kids.length;
       return {
         id: k.id,
-        lines: wrap(k.data.name, 12),
+        lines: wrap(k.data.name, 11),
         x: centre + ring2Radius * Math.cos(a),
         y: centre + ring2Radius * Math.sin(a),
       };
@@ -113,7 +115,7 @@ const deeper = all.filter((c) => !tree.some((t) => t.circle.id === c.id));
           <circle cx={n.x} cy={n.y} r={ring1NodeRadius} class="map-node" />
           <text text-anchor="middle" class="map-label">
             {n.lines.map((line, i) => (
-              <tspan x={n.x} y={n.y + offsets(n.lines.length, 17)[i]}>{line}</tspan>
+              <tspan x={n.x} y={n.y + offsets(n.lines.length, 27)[i]}>{line}</tspan>
             ))}
           </text>
         </a>
@@ -125,7 +127,7 @@ const deeper = all.filter((c) => !tree.some((t) => t.circle.id === c.id));
           <circle cx={k.x} cy={k.y} r={ring2NodeRadius} class="map-node map-node-sub" />
           <text text-anchor="middle" class="map-label map-label-sub">
             {k.lines.map((line, i) => (
-              <tspan x={k.x} y={k.y + offsets(k.lines.length, 14)[i]}>{line}</tspan>
+              <tspan x={k.x} y={k.y + offsets(k.lines.length, 24)[i]}>{line}</tspan>
             ))}
           </text>
         </a>
@@ -136,7 +138,7 @@ const deeper = all.filter((c) => !tree.some((t) => t.circle.id === c.id));
         <circle cx={centre} cy={centre} r={hubRadius} class="map-hub" />
         <text text-anchor="middle" class="map-label map-label-hub">
           {wrap(hub.data.name, 14).map((line, i, all) => (
-            <tspan x={centre} y={centre + offsets(all.length, 20)[i]}>{line}</tspan>
+            <tspan x={centre} y={centre + offsets(all.length, 30)[i]}>{line}</tspan>
           ))}
         </text>
       </a>
@@ -177,7 +179,7 @@ const deeper = all.filter((c) => !tree.some((t) => t.circle.id === c.id));
 <style>
   .circle-map {
     width: 100%;
-    max-width: 46rem;
+    max-width: 62rem;
     height: auto;
     display: block;
     margin: 1rem auto;
@@ -185,45 +187,45 @@ const deeper = all.filter((c) => !tree.some((t) => t.circle.id === c.id));
 
   .map-line {
     stroke: #35342f;
-    stroke-width: 3;
+    stroke-width: 5;
   }
 
   .map-line-sub {
-    stroke-width: 2;
+    stroke-width: 4;
   }
 
   .map-node {
     fill: #f4f2ec;
     stroke: #35342f;
-    stroke-width: 3;
+    stroke-width: 4;
   }
 
   .map-node-sub {
     fill: #ffffff;
-    stroke-width: 2;
+    stroke-width: 3;
   }
 
   .map-hub {
     fill: #35342f;
     stroke: #35342f;
-    stroke-width: 3;
+    stroke-width: 4;
   }
 
   .map-label {
-    font-size: 17px;
+    font-size: 24px;
     fill: #35342f;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
 
   .map-label-sub {
-    font-size: 14px;
+    font-size: 22px;
   }
 
   /* The centre label sits on the charcoal, so it needs white text (about 11:1 contrast). */
   .map-label-hub {
     fill: #ffffff;
     font-weight: 700;
-    font-size: 20px;
+    font-size: 28px;
   }
 
   /* Keyboard focus: thicken the ring of the focused circle. */
