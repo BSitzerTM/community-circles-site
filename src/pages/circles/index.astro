@@ -41,13 +41,13 @@ const offsets = (count: number, lineHeight: number) =>
 // as 5). Its sub-circles are spread across that slice, so none of them overlap.
 // The map is drawn in these units and scaled to the page, so the sizes are large
 // to keep the text readable once it is shrunk to fit.
-const size = 1540;
+const size = 1600;
 const centre = size / 2;
 const hubRadius = 120;
-const ring1Radius = 480;
-const ring1NodeRadius = 84;
-const ring2Radius = 690;
-const ring2NodeRadius = 74;
+const ring1Radius = 520;
+const ring1NodeRadius = 80;
+const ring2Radius = 720;
+const ring2NodeRadius = 72;
 
 const slices = level1.map((c) => 1 + childrenOf(c.id).length);
 const totalSlices = slices.reduce((a, b) => a + b, 0);
